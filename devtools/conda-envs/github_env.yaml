@@ -1,0 +1,17 @@
+name: base
+channels:
+  - conda-forge
+  - omnia
+dependencies:
+  # OpenMM test depends
+  - openmm
+
+  # geomeTRIC base depends
+  - numpy
+  - networkx
+
+  # Testing
+  - pytest
+  - codecov
+  - pytest-cov
+

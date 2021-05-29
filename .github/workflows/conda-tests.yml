@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies with Conda
         run: |
           # conda install -c defaults -c conda-forge numpy networkx ase pytest codecov pytest-cov
-          conda env update --file devtools/conda-envs/omm_psi4.yaml --name base
+          conda env update --file devtools/conda-envs/github_env.yaml --name base
 
           # Build and install package
           python setup.py develop --no-deps
