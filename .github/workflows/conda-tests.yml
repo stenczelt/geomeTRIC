@@ -9,8 +9,6 @@ jobs:
       matrix:
         python-version: [ 3.6, 3.7, 3.8, 3.9 ]
       max-parallel: 5
-    env:
-      coverage-on-version: 3.9
 
     steps:
       - uses: actions/checkout@v2
@@ -32,13 +30,7 @@ jobs:
           # Build and install package
           python setup.py develop --no-deps
 
-      - name: Test with pytest - plain
-        if: env.coverage-on-version != matrix.python-version
-        run: |
-          pytest -v geometric/tests/
-
       - name: Test with pytest - coverage
-        if: env.coverage-on-version == matrix.python-version
         run: |
           pytest -v --cov=geometric  geometric/tests/
 
