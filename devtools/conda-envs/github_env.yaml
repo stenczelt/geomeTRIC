@@ -2,7 +2,16 @@ name: base
 channels:
   - conda-forge
   - omnia
+  - psi4
+  - rdkit
 dependencies:
+  # Psi test depends
+  - psi4 >= 1.3
+  - qcengine >= 0.15
+
+  # RDKit tests
+  - rdkit
+
   # OpenMM test depends
   - openmm
 
