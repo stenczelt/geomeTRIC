@@ -41,7 +41,12 @@ import numpy as np
 import shutil
 
 import os
-from .internal import Distance, Angle, Dihedral, CartesianX, CartesianY, CartesianZ, TranslationX, TranslationY, TranslationZ, RotationA, RotationB, RotationC
+from .coordinate_systems.slots import Angle, CartesianX, CartesianY, CartesianZ, Dihedral, Distance, RotationA, \
+    RotationB, \
+    RotationC, \
+    TranslationX, \
+    TranslationY, \
+    TranslationZ
 from .engine import set_tcenv, load_tcin, TeraChem, ConicalIntersection, Psi4, QChem, Gromacs, Molpro, OpenMM, QCEngineAPI, Gaussian
 from .rotate import calc_fac_dfac
 from .molecule import Molecule, Elements
@@ -129,7 +134,7 @@ def get_molecule_engine(**kwargs):
             set_tcenv()
             tcin = load_tcin(inputf)
             # The QM-MM interface is designed on the following ideas:
-            # 1) We are only optimizing the QM portion of the system 
+            # 1) We are only optimizing the QM portion of the system
             # (until we implement fast inversion of G matrices and Hessians)
             # 2) The geomeTRIC optimizer only "sees" the part of the molecule being optimized.
             # 3) The TeraChem engine writes .rst7 files instead of .xyz files by inserting the
@@ -239,7 +244,7 @@ def get_molecule_engine(**kwargs):
             schema = kwargs.get('qcschema', False)
             if schema is False:
                 raise RuntimeError("QCEngineAPI option requires a QCSchema")
-    
+
             program = kwargs.get('qce_program', False)
             if program is False:
                 raise RuntimeError("QCEngineAPI option requires a qce_program option")
@@ -253,7 +258,7 @@ def get_molecule_engine(**kwargs):
         M = engine.M
     else:
         raise RuntimeError("Neither engine name nor customengine object was provided.\n")
-    
+
     # If --coords is provided via command line, use final coordinate set in the provided file
     # to override all previously provided coordinates.
     arg_coords = kwargs.get('coords', None)
