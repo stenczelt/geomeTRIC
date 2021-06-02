@@ -2,11 +2,12 @@
 Tests second derivatives of internal coordinates w/r.t. Cartesians.
 """
 
+import numpy as np
 import geometric
 import os
 from . import addons
-from geometric.internal import *
 from ..coordinate_systems.delocalised import DelocalizedInternalCoordinates
+from geometric.nifty import ang2bohr
 
 datad = addons.datad
 test_logger = addons.test_logger

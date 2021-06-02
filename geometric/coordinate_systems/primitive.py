@@ -481,7 +481,7 @@ class PrimitiveInternalCoordinates(InternalCoordinates):
             if type(Internal) in [RotationA, RotationB, RotationC]:
                 if Internal in self.cPrims:
                     continue
-                if geometric.coordinate_systems.slots.Rotator.stored_dot2 > 0.9:
+                if Internal.Rotator.stored_dot2 > 0.9:
                     # Linear molecule is almost parallel to reference axis
                     return True
         return False
