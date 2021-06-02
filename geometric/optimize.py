@@ -47,7 +47,8 @@ from numpy.linalg import multi_dot
 
 import geometric
 from .info import print_logo, print_citation
-from .internal import CartesianCoordinates, PrimitiveInternalCoordinates, DelocalizedInternalCoordinates
+from .internal import PrimitiveInternalCoordinates, DelocalizedInternalCoordinates
+from geometric.coordinate_systems.cartesian import CartesianCoordinates
 from .ic_tools import check_internal_grad, check_internal_hess, write_displacements
 from .normal_modes import calc_cartesian_hessian, frequency_analysis
 from .step import brent_wiki, Froot, calc_drms_dmax, get_cartesian_norm, rebuild_hessian, get_delta_prime, trust_step, force_positive_definite
@@ -202,7 +203,7 @@ class Optimizer(object):
             logger.info("Requesting %i samples from Wigner distribution.\n" % self.params.wigner)
         prefix = self.params.xyzout.replace("_optim.xyz", "").replace(".xyz", "")
         # Call the frequency analysis function with an input Hessian, with most arguments populated from self.params
-        frequency_analysis(self.X, hessian, self.molecule.elem, energy=self.E, temperature=self.params.temperature, pressure=self.params.pressure, verbose=self.params.verbose, 
+        frequency_analysis(self.X, hessian, self.molecule.elem, energy=self.E, temperature=self.params.temperature, pressure=self.params.pressure, verbose=self.params.verbose,
                            outfnm='%s.vdata_%s' % (prefix, suffix), note='Iteration %i Energy % .8f%s' % (self.Iteration, self.E, ' (Optimized Structure)' if afterOpt else ''),
                            wigner=((self.params.wigner, os.path.join(self.dirname, 'wigner')) if do_wigner else None))
 
@@ -289,7 +290,7 @@ class Optimizer(object):
         else:
             logger.info("Hessian Eigenvalues: " + ' '.join("%.5e" % i for i in Eig) + '\n')
         return Eig
-        
+
     def step(self):
         """
         Perform one step of the optimization.
@@ -489,7 +490,7 @@ class Optimizer(object):
             return
 
         assert self.state == OPT_STATE.NEEDS_EVALUATION
-        
+
         ### Adjust Trust Radius and/or Reject Step ###
         prev_trust = self.trust
         if step_state in (StepState.Poor, StepState.Reject):
@@ -655,7 +656,7 @@ class Optimizer(object):
                 errorStr += "> %i-%i-%i %6.2f\n" % (key[0]+1, key[1]+1, key[2]+1, val)
             raise LinearTorsionError("A constrained torsion has three consecutive atoms\n"
                                      "forming a nearly linear angle, making the torsion angle poorly defined.\n"+errorStr)
-        
+
 
 class OPT_STATE(object):
     """ This describes the state of an OptObject during the optimization process
@@ -672,7 +673,7 @@ class StepState(object):
     Poor    = 1 # Poor step; decrease the trust radius down to the lower limit.
     Okay    = 2 # Okay step; do not change the trust radius.
     Good    = 3 # Good step; increase the trust radius up to the limit.
-    
+
 def Optimize(coords, molecule, IC, engine, dirname, params):
     """
     Optimize the geometry of a molecule. This function used to contain the whole
@@ -755,7 +756,7 @@ def run_optimizer(**kwargs):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     kwargs['dirname'] = dirname
-    
+
     # Get the Molecule and engine objects needed for optimization
     M, engine = get_molecule_engine(**kwargs)
 

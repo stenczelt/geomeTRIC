@@ -5,7 +5,7 @@ Copyright 2016-2020 Regents of the University of California and the Authors
 
 Authors: Yudong Qiu, Daniel G. A. Smith, Lee-Ping Wang
 
-Contributors: 
+Contributors:
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -40,6 +40,8 @@ import geometric
 import json
 import traceback
 import pkg_resources
+
+import geometric.coordinate_systems.cartesian
 
 try:
     from cStringIO import StringIO      # Python 2
@@ -216,7 +218,7 @@ def geometric_run_json(in_json_dict):
     # set up the internal coordinate system
     coordsys = input_opts.get('coordsys', 'tric')
     CoordSysDict = {
-        'cart': (geometric.internal.CartesianCoordinates, False, False),
+        'cart': (geometric.coordinate_systems.cartesian.CartesianCoordinates, False, False),
         'prim': (geometric.internal.PrimitiveInternalCoordinates, True, False),
         'dlc': (geometric.internal.DelocalizedInternalCoordinates, True, False),
         'hdlc': (geometric.internal.DelocalizedInternalCoordinates, False, True),
@@ -233,7 +235,7 @@ def geometric_run_json(in_json_dict):
         cvals=CVals[0] if CVals is not None else None)
 
     # Print out information about the coordinate system
-    if isinstance(IC, geometric.internal.CartesianCoordinates):
+    if isinstance(IC, geometric.coordinate_systems.cartesian.CartesianCoordinates):
         logger.info("%i Cartesian coordinates being used\n" % (3 * M.na))
     else:
         logger.info("%i internal coordinates being used (instead of %i Cartesians)\n" % (len(IC.Internals), 3 * M.na))
@@ -249,7 +251,7 @@ def geometric_run_json(in_json_dict):
             geometric.optimize.Optimize(coords, M, IC, engine, None, params)
         else:
             # Run a constrained geometry optimization
-            if isinstance(IC, (geometric.internal.CartesianCoordinates,
+            if isinstance(IC, (geometric.coordinate_systems.cartesian.CartesianCoordinates,
                                geometric.internal.PrimitiveInternalCoordinates)):
                 raise RuntimeError("Constraints only work with delocalized internal coordinates")
             for ic, CVal in enumerate(CVals):

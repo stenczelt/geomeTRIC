@@ -5,6 +5,8 @@ A set of tests for using the QCEngine project
 import copy
 import numpy as np
 import json, os, shutil
+
+import geometric.coordinate_systems.cartesian
 from . import addons
 import geometric
 import pytest
@@ -17,7 +19,7 @@ def test_diff_h2o2_h2o(localizer):
     M = geometric.molecule.Molecule(os.path.join(datad, 'h2o2_h2o.pdb'))
     IC = geometric.internal.DelocalizedInternalCoordinates(M, build=True, connect=False, addcart=False)
     IC1 = geometric.internal.PrimitiveInternalCoordinates(M, build=True, connect=False, addcart=False)
-    IC2 = geometric.internal.CartesianCoordinates(M)
+    IC2 = geometric.coordinate_systems.cartesian.CartesianCoordinates(M)
     IC3 = geometric.internal.DelocalizedInternalCoordinates(M, build=True, connect=True, addcart=False)
     assert IC1.repr_diff(IC) == "Primitive -> Delocalized"
     assert IC.repr_diff(IC1) == "Delocalized -> Primitive"
