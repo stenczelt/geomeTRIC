@@ -39,8 +39,10 @@ jobs:
           coverage run `which geometric-optimize` --engine psi4 water2.psi4in
           cd ../..
 
-      - name: Codecov
-        uses: codecov/codecov-action@v1.5.0
+      - name: Codecov upload
+        uses: codecov/codecov-action@v1
         with:
-          fail_ci_if_error: true # optional (default = false)
-          verbose: true # optional (default = false)
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
+          verbose: true
