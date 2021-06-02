@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 from . import addons
 import geometric.optimize as gt
-from geometric.internal import PrimitiveInternalCoordinates, DelocalizedInternalCoordinates
+from geometric.internal import PrimitiveInternalCoordinates
+from ..coordinate_systems.delocalised import DelocalizedInternalCoordinates
 from ..coordinate_systems.cartesian import CartesianCoordinates
 from geometric.nifty import ang2bohr
 

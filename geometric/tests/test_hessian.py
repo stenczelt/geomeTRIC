@@ -2,12 +2,11 @@
 Tests second derivatives of internal coordinates w/r.t. Cartesians.
 """
 
-import pytest
 import geometric
 import os
-import numpy as np
 from . import addons
 from geometric.internal import *
+from ..coordinate_systems.delocalised import DelocalizedInternalCoordinates
 
 datad = addons.datad
 test_logger = addons.test_logger

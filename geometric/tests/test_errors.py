@@ -6,6 +6,7 @@ import pytest
 import os, shutil
 
 import geometric
+import geometric.coordinate_systems.delocalised
 from geometric.errors import EngineError, GeomOptNotConvergedError, LinearTorsionError
 from geometric.errors import Psi4EngineError, QChemEngineError, TeraChemEngineError, ConicalIntersectionEngineError, \
     OpenMMEngineError, GromacsEngineError, MolproEngineError, QCEngineAPIEngineError
@@ -62,7 +63,7 @@ gradient('hf')
         'input': 'water.in'
     }
     M, engine = geometric.optimize.get_molecule_engine(**input_opts)
-    IC = geometric.internal.DelocalizedInternalCoordinates(M, build=True)
+    IC = geometric.coordinate_systems.delocalised.DelocalizedInternalCoordinates(M, build=True)
     params = geometric.optimize.OptParams(**input_opts)
     # run the test optimization
     geometric.optimize.Optimize(M.xyzs[0].flatten(), M, IC, engine, 'tmp', params)
@@ -93,7 +94,7 @@ gradient('hf')
         'input': 'water.in'
     }
     M, engine = geometric.optimize.get_molecule_engine(**input_opts)
-    IC = geometric.internal.DelocalizedInternalCoordinates(M, build=True)
+    IC = geometric.coordinate_systems.delocalised.DelocalizedInternalCoordinates(M, build=True)
     params = geometric.optimize.OptParams(**input_opts)
     # EngineError
     with pytest.raises(EngineError):
@@ -126,7 +127,7 @@ gradient('hf')
         'maxiter': 1, # this will cause GeomOptNotConvergedError
     }
     M, engine = geometric.optimize.get_molecule_engine(**input_opts)
-    IC = geometric.internal.DelocalizedInternalCoordinates(M, build=True)
+    IC = geometric.coordinate_systems.delocalised.DelocalizedInternalCoordinates(M, build=True)
     params = geometric.optimize.OptParams(**input_opts)
     # GeomOptNotConvergedError
     with pytest.raises(GeomOptNotConvergedError):

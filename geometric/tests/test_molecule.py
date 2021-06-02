@@ -6,6 +6,8 @@ import pytest
 import geometric
 import os
 import numpy as np
+
+import geometric.coordinate_systems.delocalised
 from . import addons
 
 datad = addons.datad
@@ -34,7 +36,7 @@ class TestAlaGRO:
         measure = self.molecule.measure_distances(41,43)
         ref = 1.337198
         np.testing.assert_almost_equal(measure, ref, 4)
-        
+
     def test_measure_angles(self):
         measure = self.molecule.measure_angles(40,14,39)
         ref = 9.429428
@@ -182,15 +184,15 @@ class TestAlaGRO:
         assert len(d) == 97
 
     def test_remove_tr(self):
-        IC = geometric.internal.DelocalizedInternalCoordinates(self.molecule, build=True, connect=False, addcart=False)
-        IC_TR = geometric.internal.DelocalizedInternalCoordinates(self.molecule, build=True, connect=False, addcart=False, remove_tr=True)
+        IC = geometric.coordinate_systems.delocalised.DelocalizedInternalCoordinates(self.molecule, build=True, connect=False, addcart=False)
+        IC_TR = geometric.coordinate_systems.delocalised.DelocalizedInternalCoordinates(self.molecule, build=True, connect=False, addcart=False, remove_tr=True)
         assert len(IC.Internals) == self.molecule.na*3
         assert len(IC_TR.Internals) == (self.molecule.na*3 - 6)
 
     def teardown_method(self, method):
         # This method is being called after each test case, and it will revert input back to original function
         geometric.molecule.input = input
-        
+
 class TestWaterQCOut:
     @classmethod
     def setup_class(cls):
@@ -234,7 +236,7 @@ def test_rings(localizer):
                       'adamantane.xyz' : [6, 6, 6, 6],
                       'cubane.xyz' : [4, 4, 4, 4, 4, 4],
                       'coronene.xyz' : [6, 6, 6, 6, 6, 6, 6],
-                      'porphin.xyz' : [5, 16, 5, 5, 5], 
+                      'porphin.xyz' : [5, 16, 5, 5, 5],
                       'fenestradiene.xyz' : [6, 4, 5, 4, 6, 5, 6, 6, 4, 5, 4, 6, 5, 6],
                       'vancomycin.pdb' : [16, 16, 6, 16, 16, 6, 12, 6, 6, 6, 6, 6],
                       'c60.xyz' : [5, 6, 6, 6, 5, 6, 5, 6, 6, 5, 6, 6, 5, 6, 6, 5, 5, 6, 6, 5, 6, 6, 6, 5, 5, 6, 5, 6, 6, 6, 6, 5]}
@@ -245,7 +247,7 @@ def test_rings(localizer):
         assert len(ring_sizes) == len(ring_size_data[fnm])
         # Check that ring sizes are correct and in the expected order
         assert ring_sizes == ring_size_data[fnm]
-    
+
 def test_rotate_bond(localizer):
     M = geometric.molecule.Molecule(os.path.join(datad, 'neu5ac.pdb'))
     M1, success1 = M.rotate_check_clash(0, (14, 16, 18, 20), printLevel=1)

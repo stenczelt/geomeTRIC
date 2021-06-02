@@ -42,6 +42,7 @@ import traceback
 import pkg_resources
 
 import geometric.coordinate_systems.cartesian
+import geometric.coordinate_systems.delocalised
 
 try:
     from cStringIO import StringIO      # Python 2
@@ -220,9 +221,9 @@ def geometric_run_json(in_json_dict):
     CoordSysDict = {
         'cart': (geometric.coordinate_systems.cartesian.CartesianCoordinates, False, False),
         'prim': (geometric.internal.PrimitiveInternalCoordinates, True, False),
-        'dlc': (geometric.internal.DelocalizedInternalCoordinates, True, False),
-        'hdlc': (geometric.internal.DelocalizedInternalCoordinates, False, True),
-        'tric': (geometric.internal.DelocalizedInternalCoordinates, False, False)
+        'dlc': (geometric.coordinate_systems.delocalised.DelocalizedInternalCoordinates, True, False),
+        'hdlc': (geometric.coordinate_systems.delocalised.DelocalizedInternalCoordinates, False, True),
+        'tric': (geometric.coordinate_systems.delocalised.DelocalizedInternalCoordinates, False, False)
     }
 
     CoordClass, connect, addcart = CoordSysDict[coordsys.lower()]
