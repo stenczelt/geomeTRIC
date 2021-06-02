@@ -1,7 +1,7 @@
 import numpy as np
 
 from geometric.coordinate_systems.slots import CartesianX, CartesianY, CartesianZ
-from geometric.internal import PrimitiveInternalCoordinates
+from geometric.coordinate_systems.primitive import PrimitiveInternalCoordinates
 
 
 class CartesianCoordinates(PrimitiveInternalCoordinates):

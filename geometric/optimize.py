@@ -47,7 +47,7 @@ from numpy.linalg import multi_dot
 
 import geometric
 from .info import print_logo, print_citation
-from .internal import PrimitiveInternalCoordinates
+from geometric.coordinate_systems.primitive import PrimitiveInternalCoordinates
 from geometric.coordinate_systems.delocalised import DelocalizedInternalCoordinates
 from geometric.coordinate_systems.cartesian import CartesianCoordinates
 from .ic_tools import check_internal_grad, check_internal_hess, write_displacements

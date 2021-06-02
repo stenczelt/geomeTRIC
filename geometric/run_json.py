@@ -43,6 +43,7 @@ import pkg_resources
 
 import geometric.coordinate_systems.cartesian
 import geometric.coordinate_systems.delocalised
+import geometric.coordinate_systems.primitive
 
 try:
     from cStringIO import StringIO      # Python 2
@@ -220,7 +221,7 @@ def geometric_run_json(in_json_dict):
     coordsys = input_opts.get('coordsys', 'tric')
     CoordSysDict = {
         'cart': (geometric.coordinate_systems.cartesian.CartesianCoordinates, False, False),
-        'prim': (geometric.internal.PrimitiveInternalCoordinates, True, False),
+        'prim': (geometric.coordinate_systems.primitive.PrimitiveInternalCoordinates, True, False),
         'dlc': (geometric.coordinate_systems.delocalised.DelocalizedInternalCoordinates, True, False),
         'hdlc': (geometric.coordinate_systems.delocalised.DelocalizedInternalCoordinates, False, True),
         'tric': (geometric.coordinate_systems.delocalised.DelocalizedInternalCoordinates, False, False)
@@ -253,7 +254,7 @@ def geometric_run_json(in_json_dict):
         else:
             # Run a constrained geometry optimization
             if isinstance(IC, (geometric.coordinate_systems.cartesian.CartesianCoordinates,
-                               geometric.internal.PrimitiveInternalCoordinates)):
+                               geometric.coordinate_systems.primitive.PrimitiveInternalCoordinates)):
                 raise RuntimeError("Constraints only work with delocalized internal coordinates")
             for ic, CVal in enumerate(CVals):
                 if len(CVals) > 1:
