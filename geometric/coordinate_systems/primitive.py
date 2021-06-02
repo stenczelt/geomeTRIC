@@ -15,7 +15,7 @@ from geometric.coordinate_systems.slots import Angle, CartesianX, CartesianY, Ca
     TranslationX, \
     TranslationY, \
     TranslationZ
-from geometric.internal import convert_angstroms_degrees
+from geometric.coordinate_systems.convert import convert_angstroms_degrees
 from geometric.molecule import Elements, Radii
 from geometric.nifty import ang2bohr, bohr2ang, logger
 
