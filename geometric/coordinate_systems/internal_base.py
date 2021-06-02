@@ -1,10 +1,15 @@
+#!/usr/bin/env python
+
+# standard library imports
 import time
 from collections import OrderedDict
 
+# third party
 import numpy as np
 from numpy.linalg import multi_dot
 
-from geometric.nifty import click, logger
+# local application imports
+from geometric.nifty import logger
 
 CacheWarning = False
 
@@ -61,26 +66,31 @@ class InternalCoordinates(object):
         ans = np.array(WilsonB)
         return ans
 
-    def GMatrix(self, xyz):
+    def GMatrix(self, xyz, u=None):
         """
         Given Cartesian coordinates xyz, return the G-matrix
         given by G = BuBt where u is an arbitrary matrix (default to identity)
         """
         Bmat = self.wilsonB(xyz)
-        BuBt = np.dot(Bmat, Bmat.T)
+
+        if u is None:
+            BuBt = np.dot(Bmat, Bmat.T)
+        else:
+            BuBt = np.dot(Bmat, np.dot(u, Bmat.T))
+
         return BuBt
 
     def GInverse_SVD(self, xyz):
         xyz = xyz.reshape(-1, 3)
         # Perform singular value decomposition
-        click()
+        # click()
         loops = 0
         while True:
             try:
                 G = self.GMatrix(xyz)
-                time_G = click()
+                # time_G = click()
                 U, S, VT = np.linalg.svd(G)
-                time_svd = click()
+                # time_svd = click()
             except np.linalg.LinAlgError:
                 logger.warning(
                     "\x1b[1;91m SVD fails, perturbing coordinates and trying again\x1b[0m\n"
@@ -108,11 +118,11 @@ class InternalCoordinates(object):
 
     def GInverse_EIG(self, xyz):
         xyz = xyz.reshape(-1, 3)
-        click()
+        # click()
         G = self.GMatrix(xyz)
-        time_G = click()
+        # time_G = click()
         Gi = np.linalg.inv(G)
-        time_inv = click()
+        # time_inv = click()
         # print "G-time: %.3f Inv-time: %.3f" % (time_G, time_inv)
         return Gi
 
