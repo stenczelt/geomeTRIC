@@ -1,0 +1,22 @@
+name: base
+channels:
+  - conda-forge
+  - omnia
+  - psi4
+  - rdkit
+dependencies:
+  # RDKit tests
+  - rdkit
+
+  # OpenMM test depends
+  - openmm
+
+  # geomeTRIC base depends
+  - numpy
+  - networkx
+
+  # Testing
+  - pytest
+  - codecov
+  - pytest-cov
+
