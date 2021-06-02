@@ -1,6 +1,6 @@
 import numpy as np
 
-from geometric.internal import d_cross, d_cross_ab, d_ncross, d_unit_vector
+from geometric.coordinate_systems.linalg import d_cross, d_cross_ab, d_ncross, d_unit_vector
 from geometric.nifty import commadash, logger
 from geometric.rotate import calc_rot_vec_diff, get_expmap, get_expmap_der, is_linear
 
