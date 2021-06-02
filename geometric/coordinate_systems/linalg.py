@@ -9,9 +9,9 @@ def unit_vector(a):
 
 
 def d_unit_vector(a, ndim=3):
-    term1 = np.eye(ndim)/np.linalg.norm(a)
-    term2 = np.outer(a, a)/(np.linalg.norm(a)**3)
-    answer = term1-term2
+    term1 = np.eye(ndim) / np.linalg.norm(a)
+    term2 = np.outer(a, a) / (np.linalg.norm(a) ** 3)
+    answer = term1 - term2
     return answer
 
 
@@ -55,7 +55,7 @@ def d_ncross(a, b):
     ncross = np.linalg.norm(np.cross(a, b))
     term1 = a * np.dot(b, b)
     term2 = -b * np.dot(a, b)
-    answer = (term1+term2)/ncross
+    answer = (term1 + term2) / ncross
     return answer
 
 

@@ -1,8 +1,15 @@
 import numpy as np
 
-from geometric.coordinate_systems.slots import CartesianX, CartesianY, CartesianZ, Distance, LinearAngle, TranslationX, \
-    TranslationY, \
-    TranslationZ
+from geometric.coordinate_systems.slots import (
+    CartesianX,
+    CartesianY,
+    CartesianZ,
+    Distance,
+    LinearAngle,
+    TranslationX,
+    TranslationY,
+    TranslationZ,
+)
 from geometric.nifty import bohr2ang
 
 
@@ -13,12 +20,20 @@ def convert_angstroms_degrees(prims, values):
     for ic, c in enumerate(prims):
         if type(c) in [TranslationX, TranslationY, TranslationZ]:
             w = 1.0
-        elif hasattr(c, 'w'):
+        elif hasattr(c, "w"):
             w = c.w
         else:
             w = 1.0
-        if type(c) in [TranslationX, TranslationY, TranslationZ, CartesianX, CartesianY, CartesianZ, Distance,
-                       LinearAngle]:
+        if type(c) in [
+            TranslationX,
+            TranslationY,
+            TranslationZ,
+            CartesianX,
+            CartesianY,
+            CartesianZ,
+            Distance,
+            LinearAngle,
+        ]:
             factor = bohr2ang
         elif c.isAngular:
             factor = 180.0 / np.pi

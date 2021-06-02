@@ -1,17 +1,37 @@
 import numpy as np
 from numpy.linalg import multi_dot
 
-from geometric.coordinate_systems.slots import RotationA, RotationB, RotationC, TranslationX, TranslationY, TranslationZ
+from geometric.coordinate_systems.slots import (
+    RotationA,
+    RotationB,
+    RotationC,
+    TranslationX,
+    TranslationY,
+    TranslationZ,
+)
 from geometric.coordinate_systems.primitive import PrimitiveInternalCoordinates
 from geometric.coordinate_systems.internal_base import InternalCoordinates
 from geometric.nifty import ang2bohr, click, logger
 
 
 class DelocalizedInternalCoordinates(InternalCoordinates):
-    def __init__(self, molecule, imagenr=0, build=False, connect=False, addcart=False, constraints=None, cvals=None, remove_tr=False, cart_only=False, conmethod=0):
+    def __init__(
+        self,
+        molecule,
+        imagenr=0,
+        build=False,
+        connect=False,
+        addcart=False,
+        constraints=None,
+        cvals=None,
+        remove_tr=False,
+        cart_only=False,
+        conmethod=0,
+    ):
         super(DelocalizedInternalCoordinates, self).__init__()
         # cart_only is just because of how I set up the class structure.
-        if cart_only: return
+        if cart_only:
+            return
         # Set the algorithm for constraint satisfaction.
         # 0 - Original algorithm implemented in 2016, constraints are satisfied slowly unless "enforce" is enabled
         # 1 - Updated algorithm implemented on 2019-03-20, constraints are satisfied instantly, "enforce" is not needed
@@ -24,7 +44,13 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
         # Add Cartesian coordinates to all.
         self.addcart = addcart
         # The DLC contains an instance of primitive internal coordinates.
-        self.Prims = PrimitiveInternalCoordinates(molecule, connect=connect, addcart=addcart, constraints=constraints, cvals=cvals)
+        self.Prims = PrimitiveInternalCoordinates(
+            molecule,
+            connect=connect,
+            addcart=addcart,
+            constraints=constraints,
+            cvals=cvals,
+        )
         self.na = molecule.na
         # Whether constraints have been enforced previously
         self.enforced = False
@@ -112,7 +138,7 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
         # Number of constraints
         nc = len(self.Prims.cPrims)
         # Total dimension
-        nt = ni+nc
+        nt = ni + nc
         # Lower block of the augmented Hessian
         cT = np.zeros((nc, ni), dtype=float)
         # The further change needed in constrained variables:
@@ -123,7 +149,7 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
             iPrim = self.Prims.Internals.index(c)
             # The DLC corresponding to the constrained primitive (a.k.a. cProj) is self.Vecs[self.cDLC[ic]].
             # For a differential change in the DLC, the primitive that we are constraining changes by:
-            cT[ic, self.cDLC[ic]] = 1.0/self.Vecs[iPrim, self.cDLC[ic]]
+            cT[ic, self.cDLC[ic]] = 1.0 / self.Vecs[iPrim, self.cDLC[ic]]
             # The new constraint algorithm satisfies constraints too quickly and could cause
             # the energy to blow up. Thus, constraint steps are restricted to 0.1 au/radian
             if self.conmethod == 1:
@@ -133,9 +159,9 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
                     c0[ic] = 0.1
         # Construct augmented Hessian
         HC = np.zeros((nt, nt), dtype=float)
-        HC[0:ni, 0:ni] = H[:,:]
-        HC[ni:nt, 0:ni] = cT[:,:]
-        HC[0:ni, ni:nt] = cT.T[:,:]
+        HC[0:ni, 0:ni] = H[:, :]
+        HC[ni:nt, 0:ni] = cT[:, :]
+        HC[0:ni, ni:nt] = cT.T[:, :]
         # Construct augmented gradient
         GC = np.zeros(nt, dtype=float)
         GC[0:ni] = G[:]
@@ -170,7 +196,9 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
             if niter > 1 and np.linalg.norm(dQ) > np.linalg.norm(dQ0):
                 xyz1 = xyzs[np.argmin(ndqs)]
                 if not self.enforce_fail_printed:
-                    logger.warning("Warning: Failed to enforce exact constraint satisfaction. Please remove possible redundant constraints. See below:\n")
+                    logger.warning(
+                        "Warning: Failed to enforce exact constraint satisfaction. Please remove possible redundant constraints. See below:\n"
+                    )
                     self.printConstraints(xyz1, thre=0.0)
                     self.enforce_fail_printed = True
                 return xyz1
@@ -273,7 +301,7 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
             if np.abs(value) > 1e-6:
                 LargeVals += 1
                 LargeIdx.append(ival)
-        Expect = 3*self.na
+        Expect = 3 * self.na
         # print "%i atoms (expect %i coordinates); %i/%i singular values are > 1e-6" % (self.na, Expect, LargeVals, len(L))
         # if LargeVals <= Expect:
         self.Vecs = Q[:, LargeIdx]
@@ -292,7 +320,7 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
                 cVec = np.array(cVec)
                 cVec /= np.linalg.norm(cVec)
                 # This is a "new DLC" that corresponds to the primitive that we are constraining
-                cProj = np.dot(self.Vecs,cVec.T)
+                cProj = np.dot(self.Vecs, cVec.T)
                 cProj /= np.linalg.norm(cProj)
                 V.append(np.array(cProj).flatten())
                 # print c, cProj[iPrim]
@@ -317,14 +345,20 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
                 elif len(U) == self.Vecs.shape[1]:
                     break
                 elif len(U) < self.Vecs.shape[1]:
-                    raise RuntimeError('Gram-Schmidt orthogonalization has failed (expect %i length %i)' % (self.Vecs.shape[1], len(U)))
+                    raise RuntimeError(
+                        "Gram-Schmidt orthogonalization has failed (expect %i length %i)"
+                        % (self.Vecs.shape[1], len(U))
+                    )
             # print "Gram-Schmidt completed with thre=%.0e" % thre
             self.Vecs = np.array(U).T
             # Constrained DLCs are on the left of self.Vecs.
             self.cDLC = [i for i in range(len(self.Prims.cPrims))]
         # Now self.Internals is no longer a list of InternalCoordinate objects but only a list of strings.
         # We do not create objects for individual DLCs but
-        self.Internals = ["Constraint-DLC" if i < ncon else "DLC" + " %i" % (i+1) for i in range(self.Vecs.shape[1])]
+        self.Internals = [
+            "Constraint-DLC" if i < ncon else "DLC" + " %i" % (i + 1)
+            for i in range(self.Vecs.shape[1])
+        ]
 
     def build_dlc_1(self, xyz):
         """
@@ -381,7 +415,9 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
                 cPrimIdx.append(iPrim)
         ncon = len(self.Prims.cPrims)
         if cPrimIdx != list(range(ncon)):
-            raise RuntimeError("The constraint primitives should be at the start of the list")
+            raise RuntimeError(
+                "The constraint primitives should be at the start of the list"
+            )
         # Form a sub-G-matrix that doesn't include the constrained primitives and diagonalize it to form DLCs.
         Gsub = G[ncon:, ncon:]
         time_G = click()
@@ -403,24 +439,28 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
         Expect = np.sum(np.linalg.eigh(G)[0] > 1e-6)
 
         if (ncon + len(LargeIdx)) < Expect:
-            raise RuntimeError("Expected at least %i delocalized coordinates, but got only %i" % (Expect, ncon + len(LargeIdx)))
+            raise RuntimeError(
+                "Expected at least %i delocalized coordinates, but got only %i"
+                % (Expect, ncon + len(LargeIdx))
+            )
         # print("%i atoms (expect %i coordinates); %i/%i singular values are > 1e-6" % (self.na, Expect, LargeVals, len(L)))
 
         # Create "generalized" DLCs where the first six columns are the constrained primitive ICs
         # and the other columns are the DLCs formed from the rest
-        self.Vecs = np.zeros((nprim, ncon+LargeVals), dtype=float)
+        self.Vecs = np.zeros((nprim, ncon + LargeVals), dtype=float)
         for i in range(ncon):
             self.Vecs[i, i] = 1.0
-        self.Vecs[ncon:, ncon:ncon+LargeVals] = Q[:, LargeIdx]
+        self.Vecs[ncon:, ncon : ncon + LargeVals] = Q[:, LargeIdx]
 
         # Perform Gram-Schmidt orthogonalization
         def ov(vi, vj):
             return multi_dot([vi, G, vj])
+
         if self.haveConstraints():
             click()
             V = self.Vecs.copy()
             nv = V.shape[1]
-            Vnorms = np.array([np.sqrt(ov(V[:,ic], V[:, ic])) for ic in range(nv)])
+            Vnorms = np.array([np.sqrt(ov(V[:, ic], V[:, ic])) for ic in range(nv)])
             # U holds the Gram-Schmidt orthogonalized DLCs
             U = np.zeros((V.shape[0], Expect), dtype=float)
             Unorms = np.zeros(Expect, dtype=float)
@@ -431,32 +471,40 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
                 U[:, ic] = V[:, ic].copy()
                 ui = U[:, ic]
                 Unorms[ic] = np.sqrt(ov(ui, ui))
-                if Unorms[ic]/Vnorms[ic] < 0.1:
-                    logger.warning("Constraint %i is almost redundant; after projection norm is %.3f of original\n" % (ic, Unorms[ic]/Vnorms[ic]))
+                if Unorms[ic] / Vnorms[ic] < 0.1:
+                    logger.warning(
+                        "Constraint %i is almost redundant; after projection norm is %.3f of original\n"
+                        % (ic, Unorms[ic] / Vnorms[ic])
+                    )
                 V0 = V.copy()
                 # Project out newest U column from all remaining V columns.
-                for jc in range(ic+1, nv):
+                for jc in range(ic + 1, nv):
                     vj = V[:, jc]
-                    vj -= ui * ov(ui, vj)/Unorms[ic]**2
+                    vj -= ui * ov(ui, vj) / Unorms[ic] ** 2
 
             for ic in range(ncon, Expect):
                 # Pick out the V column with the largest norm
-                norms = np.array([np.sqrt(ov(V[:, jc], V[:, jc])) for jc in range(ncon, nv)])
-                imax = ncon+np.argmax(norms)
+                norms = np.array(
+                    [np.sqrt(ov(V[:, jc], V[:, jc])) for jc in range(ncon, nv)]
+                )
+                imax = ncon + np.argmax(norms)
                 # Add this column to U
                 U[:, ic] = V[:, imax].copy()
                 ui = U[:, ic]
                 Unorms[ic] = np.sqrt(ov(ui, ui))
                 # Project out the newest U column from all V columns
                 for jc in range(ncon, nv):
-                    V[:, jc] -= ui * ov(ui, V[:, jc])/Unorms[ic]**2
+                    V[:, jc] -= ui * ov(ui, V[:, jc]) / Unorms[ic] ** 2
 
             # self.Vecs contains the linear combination coefficients that are our new DLCs
             self.Vecs = U.copy()
             # Constrained DLCs are on the left of self.Vecs.
             self.cDLC = [i for i in range(len(self.Prims.cPrims))]
 
-        self.Internals = ["Constraint" if i < ncon else "DLC" + " %i" % (i+1) for i in range(self.Vecs.shape[1])]
+        self.Internals = [
+            "Constraint" if i < ncon else "DLC" + " %i" % (i + 1)
+            for i in range(self.Vecs.shape[1])
+        ]
         # # LPW: Coefficients of DLC's are in each column and DLCs corresponding to constraints should basically be like (0 1 0 0 0 ..)
         # pmat2d(self.Vecs, format='f', precision=2)
         # B = self.Prims.wilsonB(xyz)
@@ -486,15 +534,15 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
         Uses the same logic as build_dlc_1.
         """
         # Create three translation and three rotation primitive ICs for the whole system
-        na = int(len(xyz)/3)
+        na = int(len(xyz) / 3)
         alla = range(na)
-        sel = xyz.reshape(-1,3).copy()
+        sel = xyz.reshape(-1, 3).copy()
         TRPrims = []
         TRPrims.append(TranslationX(alla, w=np.ones(na) / na))
         TRPrims.append(TranslationY(alla, w=np.ones(na) / na))
         TRPrims.append(TranslationZ(alla, w=np.ones(na) / na))
         sel -= np.mean(sel, axis=0)
-        rg = np.sqrt(np.mean(np.sum(sel**2, axis=1)))
+        rg = np.sqrt(np.mean(np.sum(sel ** 2, axis=1)))
         TRPrims.append(RotationA(alla, xyz, self.Prims.Rotators, w=rg))
         TRPrims.append(RotationB(alla, xyz, self.Prims.Rotators, w=rg))
         TRPrims.append(RotationC(alla, xyz, self.Prims.Rotators, w=rg))
@@ -510,12 +558,17 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
             if prim not in TRPrims:
                 primorder.append(iprim)
         self.Prims.Internals = addPrims + [self.Prims.Internals[p] for p in primorder]
-        self.Vecs = np.vstack((np.zeros((len(addPrims), self.Vecs.shape[1]), dtype=float), self.Vecs[np.array(primorder), :]))
+        self.Vecs = np.vstack(
+            (
+                np.zeros((len(addPrims), self.Vecs.shape[1]), dtype=float),
+                self.Vecs[np.array(primorder), :],
+            )
+        )
 
         self.clearCache()
         # Build DLCs with six extra in the front corresponding to the overall translations and rotations
         subVecs = self.Vecs.copy()
-        self.Vecs = np.zeros((self.Vecs.shape[0], self.Vecs.shape[1]+6), dtype=float)
+        self.Vecs = np.zeros((self.Vecs.shape[0], self.Vecs.shape[1] + 6), dtype=float)
         self.Vecs[:6, :6] = np.eye(6)
         self.Vecs[:, 6:] = subVecs.copy()
         # pmat2d(self.Vecs, precision=3, format='f')
@@ -528,6 +581,7 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
         # Define a function for computing overlap
         def ov(vi, vj):
             return multi_dot([vi, G, vj])
+
         V = self.Vecs.copy()
         nv = V.shape[1]
         Vnorms = np.array([np.sqrt(ov(V[:, ic], V[:, ic])) for ic in range(nv)])
@@ -539,34 +593,42 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
         ncon = len(self.Prims.cPrims)
         # Keep translations, rotations, and any constraints in sequential order
         # and project them out of the remaining DLCs
-        for ic in range(6+ncon):
+        for ic in range(6 + ncon):
             U[:, ic] = V[:, ic].copy()
             ui = U[:, ic]
             Unorms[ic] = np.sqrt(ov(ui, ui))
-            if Unorms[ic]/Vnorms[ic] < 0.1:
-                logger.warning("Constraint %i is almost redundant; after projection norm is %.3f of original\n" % (ic-6, Unorms[ic]/Vnorms[ic]))
+            if Unorms[ic] / Vnorms[ic] < 0.1:
+                logger.warning(
+                    "Constraint %i is almost redundant; after projection norm is %.3f of original\n"
+                    % (ic - 6, Unorms[ic] / Vnorms[ic])
+                )
             V0 = V.copy()
             # Project out newest U column from all remaining V columns.
-            for jc in range(ic+1, nv):
+            for jc in range(ic + 1, nv):
                 vj = V[:, jc]
-                vj -= ui * ov(ui, vj)/Unorms[ic]**2
+                vj -= ui * ov(ui, vj) / Unorms[ic] ** 2
         # Now keep the remaining DLC with the largest norm, perform projection,
         # then repeat until the expected number is found
-        shift = 6+ncon
+        shift = 6 + ncon
         for ic in range(shift, Expect):
             # Pick out the V column with the largest norm
-            norms = np.array([np.sqrt(ov(V[:, jc], V[:, jc])) for jc in range(shift, nv)])
-            imax = shift+np.argmax(norms)
+            norms = np.array(
+                [np.sqrt(ov(V[:, jc], V[:, jc])) for jc in range(shift, nv)]
+            )
+            imax = shift + np.argmax(norms)
             # Add this column to U
             U[:, ic] = V[:, imax].copy()
             ui = U[:, ic]
             Unorms[ic] = np.sqrt(ov(ui, ui))
             # Project out the newest U column from all V columns
             for jc in range(ncon, nv):
-                V[:, jc] -= ui * ov(ui, V[:, jc])/Unorms[ic]**2
+                V[:, jc] -= ui * ov(ui, V[:, jc]) / Unorms[ic] ** 2
         # self.Vecs contains the linear combination coefficients that are our new DLCs
         self.Vecs = U[:, 6:].copy()
-        self.Internals = ["Constraint" if i < ncon else "DLC" + " %i" % (i+1) for i in range(self.Vecs.shape[1])]
+        self.Internals = [
+            "Constraint" if i < ncon else "DLC" + " %i" % (i + 1)
+            for i in range(self.Vecs.shape[1])
+        ]
 
     def weight_vectors(self, xyz):
         """
@@ -585,9 +647,9 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
         for i in range(len(self.Internals)):
             dQ = np.zeros(len(self.Internals), dtype=float)
             dQ[i] = eps
-            dxyz = multi_dot([Bmat.T, Ginv , dQ.T])
-            rmsd = np.sqrt(np.mean(np.sum(np.array(dxyz).reshape(-1,3)**2, axis=1)))
-            dxdq[i] = rmsd/eps
+            dxyz = multi_dot([Bmat.T, Ginv, dQ.T])
+            rmsd = np.sqrt(np.mean(np.sum(np.array(dxyz).reshape(-1, 3) ** 2, axis=1)))
+            dxdq[i] = rmsd / eps
         dxdq /= np.max(dxdq)
         for i in range(len(self.Internals)):
             self.Vecs[:, i] *= dxdq[i]
@@ -656,19 +718,19 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
         return self.GInverse_SVD(xyz)
 
     def repr_diff(self, other):
-        if hasattr(other, 'Prims'):
+        if hasattr(other, "Prims"):
             return self.Prims.repr_diff(other.Prims)
         else:
-            if self.Prims.repr_diff(other) == '':
-                return 'Delocalized -> Primitive'
+            if self.Prims.repr_diff(other) == "":
+                return "Delocalized -> Primitive"
             else:
-                return 'Delocalized -> Primitive\n' + self.Prims.repr_diff(other)
+                return "Delocalized -> Primitive\n" + self.Prims.repr_diff(other)
 
     def guess_hessian(self, coords):
         """ Build the guess Hessian, consisting of a diagonal matrix
         in the primitive space and changed to the basis of DLCs. """
         Hprim = self.Prims.guess_hessian(coords)
-        return multi_dot([self.Vecs.T,Hprim,self.Vecs])
+        return multi_dot([self.Vecs.T, Hprim, self.Vecs])
 
     def resetRotations(self, xyz):
         """ Reset the reference geometries for calculating the orientational variables. """
