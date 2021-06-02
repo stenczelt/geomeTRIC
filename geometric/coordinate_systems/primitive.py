@@ -5,7 +5,7 @@ from copy import deepcopy
 import networkx as nx
 import numpy as np
 
-from .internal_base import InternalCoordinates
+from .internal_base import SimpleIC
 from .slots import (
     Angle,
     CartesianX,
@@ -30,7 +30,7 @@ from geometric.molecule import Elements, Radii
 from geometric.nifty import ang2bohr, bohr2ang, logger
 
 
-class PrimitiveInternalCoordinates(InternalCoordinates):
+class PrimitiveInternalCoordinates(SimpleIC):
     def __init__(
         self,
         molecule,
@@ -40,7 +40,7 @@ class PrimitiveInternalCoordinates(InternalCoordinates):
         cvals=None,
         **kwargs
     ):
-        super(PrimitiveInternalCoordinates, self).__init__()
+        super(PrimitiveInternalCoordinates, self).__init__(molecule)
         self.connect = connect
         self.addcart = addcart
         self.Internals = []
@@ -551,11 +551,11 @@ class PrimitiveInternalCoordinates(InternalCoordinates):
                     return True
         return False
 
-    def calculate(self, xyz):
-        answer = []
-        for Internal in self.Internals:
-            answer.append(Internal.value(xyz))
-        return np.array(answer)
+    # def calculate(self, xyz):
+    #     answer = []
+    #     for Internal in self.Internals:
+    #         answer.append(Internal.value(xyz))
+    #     return np.array(answer)
 
     def getRotatorNorms(self):
         rots = []
@@ -588,17 +588,6 @@ class PrimitiveInternalCoordinates(InternalCoordinates):
                 "Linear Angles: " + " ".join(["% .4f" % i for i in linAngs]) + "\n"
             )
 
-    def derivatives(self, xyz):
-        self.calculate(xyz)
-        answer = []
-        for Internal in self.Internals:
-            answer.append(Internal.derivative(xyz))
-        # This array has dimensions:
-        # 1) Number of internal coordinates
-        # 2) Number of atoms
-        # 3) 3
-        return np.array(answer)
-
     def second_derivatives(self, xyz):
         self.calculate(xyz)
         answer = []
@@ -618,13 +607,6 @@ class PrimitiveInternalCoordinates(InternalCoordinates):
         for Internal in self.Internals:
             answer.append(Internal.calcDiff(xyz1, xyz2))
         return np.array(answer)
-
-    def GInverse(self, xyz):
-        return self.GInverse_SVD(xyz)
-
-    def add(self, dof):
-        if dof not in self.Internals:
-            self.Internals.append(dof)
 
     def delete(self, dof):
         for ii in range(len(self.Internals))[::-1]:

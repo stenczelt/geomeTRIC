@@ -1,10 +1,10 @@
 import numpy as np
 
+from .internal_base import SimpleIC
 from .slots import CartesianX, CartesianY, CartesianZ
-from .primitive import PrimitiveInternalCoordinates
 
 
-class CartesianCoordinates(PrimitiveInternalCoordinates):
+class CartesianCoordinates(SimpleIC):
     """
     Cartesian coordinate system, written as a kind of internal coordinate class.
     This one does not support constraints, because that requires adding some
@@ -28,3 +28,13 @@ class CartesianCoordinates(PrimitiveInternalCoordinates):
 
     def guess_hessian(self, xyz):
         return 0.5 * np.eye(len(xyz.flatten()))
+
+    def addConstraint(self, cPrim, cVal):
+        raise NotImplementedError(
+            "Constraints not supported with Cartesian coordinates"
+        )
+
+    def haveConstraints(self):
+        raise NotImplementedError(
+            "Constraints not supported with Cartesian coordinates"
+        )

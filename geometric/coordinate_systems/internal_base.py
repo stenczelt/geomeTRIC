@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # standard library imports
-import time
+from abc import ABC, abstractmethod
 from collections import OrderedDict
 
 # third party
@@ -14,29 +14,43 @@ from geometric.nifty import logger
 CacheWarning = False
 
 
-class InternalCoordinates(object):
-    def __init__(self):
+class InternalCoordinateSystemBase(ABC):
+    """
+    This is a base class for all ICs.
+
+    TKS notes:
+    - The inheritance was confusing before, but now I am fixing that. In the meantime,
+    I am understanding how this works.
+    - this is an Abstract class really
+
+    As far as I understand, there are some key parts of it:
+    - self.Internals holds all the internal coordinate objects
+
+    """
+
+    def __init__(self, molecule):
         self.stored_wilsonB = OrderedDict()
 
+    @abstractmethod
     def addConstraint(self, cPrim, cVal):
-        raise NotImplementedError(
-            "Constraints not supported with Cartesian coordinates"
-        )
+        ...
 
+    @abstractmethod
     def haveConstraints(self):
-        raise NotImplementedError(
-            "Constraints not supported with Cartesian coordinates"
-        )
+        ...
 
-    def augmentGH(self, xyz, G, H):
-        raise NotImplementedError(
-            "Constraints not supported with Cartesian coordinates"
-        )
+    @abstractmethod
+    def add(self, dof):
+        # adds an internal coordinate instance to the set of internals
+        ...
 
-    def calcGradProj(self, xyz, gradx):
-        raise NotImplementedError(
-            "Constraints not supported with Cartesian coordinates"
-        )
+    @abstractmethod
+    def derivatives(self, xyz):
+        pass
+
+    @abstractmethod
+    def calculate(self, xyz):
+        ...
 
     def clearCache(self):
         self.stored_wilsonB = OrderedDict()
@@ -47,9 +61,7 @@ class InternalCoordinates(object):
         given by dq_i/dx_j where x is flattened (i.e. x1, y1, z1, x2, y2, z2)
         """
         global CacheWarning
-        t0 = time.time()
         xhash = hash(xyz.tostring())
-        ht = time.time() - t0
         if xhash in self.stored_wilsonB:
             ans = self.stored_wilsonB[xhash]
             return ans
@@ -125,6 +137,9 @@ class InternalCoordinates(object):
         # time_inv = click()
         # print "G-time: %.3f Inv-time: %.3f" % (time_G, time_inv)
         return Gi
+
+    def GInverse(self, xyz):
+        return self.GInverse_SVD(xyz)
 
     def checkFiniteDifferenceGrad(self, xyz):
         xyz = xyz.reshape(-1, 3)
@@ -417,3 +432,65 @@ class InternalCoordinates(object):
             # Figure out the further change needed
             dQ1 = dQ1 - dQ_actual
             xyz1 = xyz2.copy()
+
+
+class SimpleIC(InternalCoordinateSystemBase, ABC):
+    """
+    Simple internal coordinate system: internals are used directly
+    """
+
+    def __init__(self, molecule):
+        super(SimpleIC, self).__init__(molecule)
+
+        self.Internals = []
+
+    def add(self, dof):
+        if dof not in self.Internals:
+            self.Internals.append(dof)
+
+    def calculate(self, xyz):
+        answer = []
+        for Internal in self.Internals:
+            answer.append(Internal.value(xyz))
+        return np.array(answer)
+
+    def derivatives(self, xyz):
+        self.calculate(xyz)
+        answer = []
+        for Internal in self.Internals:
+            answer.append(Internal.derivative(xyz))
+        # This array has dimensions:
+        # 1) Number of internal coordinates
+        # 2) Number of atoms
+        # 3) 3
+        return np.array(answer)
+
+
+class MixIC(InternalCoordinateSystemBase, ABC):
+    """
+    Mixing internal coordinate systems: Internals are linear combination of other internals
+
+    The over-complete IC system is stored in self.Prims
+    """
+
+    def __init__(self, molecule):
+        super(MixIC, self).__init__(molecule)
+
+        self.Prims: SimpleIC = None
+
+    def add(self, dof):
+        # for now we are not adding anything here, that is done when we are building the Prims
+        pass
+
+    def calculate(self, coords):
+        """ Calculate the DLCs given the Cartesian coordinates. """
+        PrimVals = self.Prims.calculate(coords)
+        Answer = np.dot(PrimVals, self.Vecs)
+        # To obtain the primitive coordinates from the delocalized internal coordinates,
+        # simply multiply self.Vecs*Answer.T where Answer.T is the column vector of delocalized
+        # internal coordinates. That means the "c's" in Equation 23 of Schlegel's review paper
+        # are simply the rows of the Vecs matrix.
+        # print np.dot(np.array(self.Vecs[0,:]).flatten(), np.array(Answer).flatten())
+        # print PrimVals[0]
+        # raw_input()
+        return np.array(Answer).flatten()

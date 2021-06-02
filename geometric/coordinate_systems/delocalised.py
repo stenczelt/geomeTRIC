@@ -10,11 +10,11 @@ from .slots import (
     TranslationZ,
 )
 from .primitive import PrimitiveInternalCoordinates
-from .internal_base import InternalCoordinates
+from .internal_base import MixIC
 from geometric.nifty import ang2bohr, click, logger
 
 
-class DelocalizedInternalCoordinates(InternalCoordinates):
+class DelocalizedInternalCoordinates(MixIC):
     def __init__(
         self,
         molecule,
@@ -28,7 +28,7 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
         cart_only=False,
         conmethod=0,
     ):
-        super(DelocalizedInternalCoordinates, self).__init__()
+        super(DelocalizedInternalCoordinates, self).__init__(molecule)
         # cart_only is just because of how I set up the class structure.
         if cart_only:
             return
@@ -681,19 +681,6 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
         Answer = np.dot(PMDiff, self.Vecs)
         return np.array(Answer).flatten()
 
-    def calculate(self, coords):
-        """ Calculate the DLCs given the Cartesian coordinates. """
-        PrimVals = self.Prims.calculate(coords)
-        Answer = np.dot(PrimVals, self.Vecs)
-        # To obtain the primitive coordinates from the delocalized internal coordinates,
-        # simply multiply self.Vecs*Answer.T where Answer.T is the column vector of delocalized
-        # internal coordinates. That means the "c's" in Equation 23 of Schlegel's review paper
-        # are simply the rows of the Vecs matrix.
-        # print np.dot(np.array(self.Vecs[0,:]).flatten(), np.array(Answer).flatten())
-        # print PrimVals[0]
-        # raw_input()
-        return np.array(Answer).flatten()
-
     def derivatives(self, coords):
         """ Obtain the change of the DLCs with respect to the Cartesian coordinates. """
         PrimDers = self.Prims.derivatives(coords)
@@ -713,9 +700,6 @@ class DelocalizedInternalCoordinates(InternalCoordinates):
         PrimDers = self.Prims.second_derivatives(coords)
         Answer2 = np.tensordot(self.Vecs, PrimDers, axes=(0, 0))
         return np.array(Answer2)
-
-    def GInverse(self, xyz):
-        return self.GInverse_SVD(xyz)
 
     def repr_diff(self, other):
         if hasattr(other, "Prims"):
