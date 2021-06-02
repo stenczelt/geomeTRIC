@@ -44,11 +44,10 @@ WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWIS
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 """
+import numpy as np
 
-from __future__ import division
-
-from geometric.molecule import *
-from geometric.nifty import invert_svd, logger
+import geometric.molecule
+from geometric.nifty import invert_svd
 
 
 def build_correlation(x, y):
@@ -346,7 +345,7 @@ def get_rot(x, y):
     y = y - np.mean(y, axis=0)
     N = x.shape[0]
     q = get_quat(x, y)
-    U = form_rot(q)
+    U = geometric.molecule.form_rot(q)
     # x = np.matrix(x)
     # xr = np.array((U*x.T).T)
     xr = np.dot(U, x.T).T
@@ -377,25 +376,25 @@ def get_R_der(x, y):
     y = y - np.mean(y, axis=0)
     # 3 x 3 x N_atoms x 3
     ADiffR = np.zeros((x.shape[0], 3, 3, 3), dtype=float)
-    for u in range(x.shape[0]):
-        for w in range(3):
-            for i in range(3):
-                for j in range(3):
+    for u in geometric.molecule.range(x.shape[0]):
+        for w in geometric.molecule.range(3):
+            for i in geometric.molecule.range(3):
+                for j in geometric.molecule.range(3):
                     if i == w:
                         ADiffR[u, w, i, j] = y[u, j]
     fdcheck = False
     if fdcheck:
         h = 1e-4
         R0 = build_correlation(x, y)
-        for u in range(x.shape[0]):
-            for w in range(3):
+        for u in geometric.molecule.range(x.shape[0]):
+            for w in geometric.molecule.range(3):
                 x[u, w] += h
                 RPlus = build_correlation(x, y)
                 x[u, w] -= 2 * h
                 RMinus = build_correlation(x, y)
                 x[u, w] += h
                 FDiffR = (RPlus - RMinus) / (2 * h)
-                logger.info(
+                geometric.molecule.logger.info(
                     "%i %i %12.6f\n" % (u, w, np.max(np.abs(ADiffR[u, w] - FDiffR)))
                 )
     return ADiffR
@@ -424,8 +423,8 @@ def get_F_der(x, y):
     y = y - np.mean(y, axis=0)
     dR = get_R_der(x, y)
     dF = np.zeros((x.shape[0], 3, 4, 4), dtype=float)
-    for u in range(x.shape[0]):
-        for w in range(3):
+    for u in geometric.molecule.range(x.shape[0]):
+        for w in geometric.molecule.range(3):
             dR11 = dR[u, w, 0, 0]
             dR12 = dR[u, w, 0, 1]
             dR13 = dR[u, w, 0, 2]
@@ -455,15 +454,15 @@ def get_F_der(x, y):
     if fdcheck:
         h = 1e-4
         F0 = build_F(x, y)
-        for u in range(x.shape[0]):
-            for w in range(3):
+        for u in geometric.molecule.range(x.shape[0]):
+            for w in geometric.molecule.range(3):
                 x[u, w] += h
                 FPlus = build_F(x, y)
                 x[u, w] -= 2 * h
                 FMinus = build_F(x, y)
                 x[u, w] += h
                 FDiffF = (FPlus - FMinus) / (2 * h)
-                logger.info(
+                geometric.molecule.logger.info(
                     "%i %i %12.6f\n" % (u, w, np.max(np.abs(dF[u, w] - FDiffF)))
                 )
     return dF
@@ -507,10 +506,10 @@ def get_q_der(x, y, second=False, fdcheck=False, use_loops=False):
     # pinv = np.matrix(np.linalg.pinv(np.eye(4)*l - F))
     Minv = invert_svd(np.eye(4) * l - F, thresh=1e-6)
     dq = np.zeros((x.shape[0], 3, 4), dtype=float)
-    for u in range(x.shape[0]):
-        for w in range(3):
+    for u in geometric.molecule.range(x.shape[0]):
+        for w in geometric.molecule.range(3):
             # dquw = Minv*np.matrix(dF[u, w])*np.matrix(q).T
-            dquw = multi_dot([Minv, dF[u, w], q.T])
+            dquw = geometric.molecule.multi_dot([Minv, dF[u, w], q.T])
             dq[u, w] = np.array(dquw).flatten()
 
     if second:
@@ -520,22 +519,26 @@ def get_q_der(x, y, second=False, fdcheck=False, use_loops=False):
             dM = np.zeros((x.shape[0], 3, 4, 4), dtype=float)
             dq2 = np.zeros((x.shape[0], 3, x.shape[0], 3, 4), dtype=float)
             dinv = np.zeros((x.shape[0], 3, 4, 4), dtype=float)
-            for u in range(x.shape[0]):
-                for w in range(3):
-                    dl[u, w] = multi_dot([q, dF[u, w], q.T])
+            for u in geometric.molecule.range(x.shape[0]):
+                for w in geometric.molecule.range(3):
+                    dl[u, w] = geometric.molecule.multi_dot([q, dF[u, w], q.T])
                     dM[u, w] = np.eye(4) * dl[u, w] - dF[u, w]
-                    term1 = -multi_dot([Minv, dM[u, w], Minv])
-                    term2 = multi_dot(
+                    term1 = -geometric.molecule.multi_dot([Minv, dM[u, w], Minv])
+                    term2 = geometric.molecule.multi_dot(
                         [Minv, Minv.T, dM[u, w].T, (np.eye(4) - np.dot(mat, Minv))]
                     )
-                    term3 = multi_dot(
+                    term3 = geometric.molecule.multi_dot(
                         [(np.eye(4) - np.dot(Minv, mat)), dM[u, w].T, Minv.T, Minv]
                     )
                     dinv[u, w] = term1 + term2 + term3
-                    for a in range(x.shape[0]):
-                        for b in range(3):
-                            dq2[u, w, a, b] += multi_dot([dinv[u, w], dF[a, b], q])
-                            dq2[u, w, a, b] += multi_dot([Minv, dF[a, b], dq[u, w]])
+                    for a in geometric.molecule.range(x.shape[0]):
+                        for b in geometric.molecule.range(3):
+                            dq2[u, w, a, b] += geometric.molecule.multi_dot(
+                                [dinv[u, w], dF[a, b], q]
+                            )
+                            dq2[u, w, a, b] += geometric.molecule.multi_dot(
+                                [Minv, dF[a, b], dq[u, w]]
+                            )
         else:
             # t0 = time.time()
             # LPW 2019-03-09: Setting optimize=True gives a 15x speedup for trp-cage (200 atoms, 0.02 vs. 0.3 s)
@@ -565,12 +568,12 @@ def get_q_der(x, y, second=False, fdcheck=False, use_loops=False):
     if fdcheck:
         # If fdcheck = True, then return finite difference derivatives
         h = 1e-6
-        logger.info(
+        geometric.molecule.logger.info(
             "-=# Now checking first derivatives of superposition quaternion w/r.t. Cartesians #=-\n"
         )
         FDiffQ = np.zeros((x.shape[0], 3, 4), dtype=float)
-        for u in range(x.shape[0]):
-            for w in range(3):
+        for u in geometric.molecule.range(x.shape[0]):
+            for w in geometric.molecule.range(3):
                 x[u, w] += h
                 QPlus = get_quat(x, y)
                 x[u, w] -= 2 * h
@@ -578,22 +581,22 @@ def get_q_der(x, y, second=False, fdcheck=False, use_loops=False):
                 x[u, w] += h
                 FDiffQ[u, w] = (QPlus - QMinus) / (2 * h)
                 maxerr = np.max(np.abs(dq[u, w] - FDiffQ[u, w]))
-                logger.info(
+                geometric.molecule.logger.info(
                     "atom %3i %s : maxerr = %.3e %s\n"
                     % (u, "xyz"[w], maxerr, "X" if maxerr > 1e-6 else "")
                 )
         dq = FDiffQ
         if second:
             h = 1.0e-3
-            logger.info(
+            geometric.molecule.logger.info(
                 "-=# Now checking second derivatives of superposition quaternion w/r.t. Cartesians #=-\n"
             )
             Q0 = get_quat(x, y)
             FDiffQ2 = np.zeros((x.shape[0], 3, y.shape[0], 3, 4), dtype=float)
-            for u in range(x.shape[0]):
-                for w in range(3):
-                    for a in range(x.shape[0]):
-                        for b in range(3):
+            for u in geometric.molecule.range(x.shape[0]):
+                for w in geometric.molecule.range(3):
+                    for a in geometric.molecule.range(x.shape[0]):
+                        for b in geometric.molecule.range(3):
                             if a == u and b == w:
                                 x[u, w] += h
                                 QPlus = get_quat(x, y)
@@ -618,7 +621,7 @@ def get_q_der(x, y, second=False, fdcheck=False, use_loops=False):
                                 np.abs(dq2[u, w, a, b] - FDiffQ2[u, w, a, b])
                             )
                             if maxerr > 1e-8:
-                                logger.info(
+                                geometric.molecule.logger.info(
                                     "atom %3i %s, %3i %s : maxerr = %.3e %s\n"
                                     % (
                                         u,
@@ -730,22 +733,22 @@ def get_expmap_der(x, y, second=False, fdcheck=False, use_loops=False):
         fac, dfac = calc_fac_dfac(q[0])
     dvdq = np.zeros((4, 3), dtype=float)
     dvdq[0, :] = dfac * q[1:]
-    for i in range(3):
+    for i in geometric.molecule.range(3):
         dvdq[i + 1, i] = fac
     if second:
         dvdq2 = np.zeros((4, 4, 3), dtype=float)
         dvdq2[0, 0, :] = dfac2 * q[1:]
-        for i in range(3):
+        for i in geometric.molecule.range(3):
             dvdq2[0, i + 1, i] = dfac
             dvdq2[i + 1, 0, i] = dfac
     if fdcheck:
         h = 1e-6
         fac, _ = calc_fac_dfac(q[0])
         V0 = fac * q[1:]
-        logger.info(
+        geometric.molecule.logger.info(
             "-=# Now checking first derivatives of exponential map w/r.t. quaternion #=-\n"
         )
-        for p in range(4):
+        for p in geometric.molecule.range(4):
             # Do backwards difference only, because arccos of q[0] > 1 is undefined
             q[p] -= h
             fac, _ = calc_fac_dfac(q[0])
@@ -753,13 +756,13 @@ def get_expmap_der(x, y, second=False, fdcheck=False, use_loops=False):
             q[p] += h
             FDiffV = (V0 - VMinus) / h
             maxerr = np.max(np.abs(dvdq[p] - FDiffV))
-            logger.info(
+            geometric.molecule.logger.info(
                 "q %3i : maxerr = %.3e %s\n" % (i, maxerr, "X" if maxerr > 1e-6 else "")
             )
             # logger.info(i, dvdq[i], FDiffV, np.max(np.abs(dvdq[i]-FDiffV)))
         if second:
             h = 1e-5
-            logger.info(
+            geometric.molecule.logger.info(
                 "-=# Now checking second derivatives of exponential map w/r.t. quaternion #=-\n"
             )
 
@@ -767,8 +770,8 @@ def get_expmap_der(x, y, second=False, fdcheck=False, use_loops=False):
                 fac_, _ = calc_fac_dfac(q_[0])
                 return fac_ * q_[1:]
 
-            for p in range(4):
-                for r in range(4):
+            for p in geometric.molecule.range(4):
+                for r in geometric.molecule.range(4):
                     if p == r:
                         FDiffV2 = V0.copy()
                         q[p] -= h
@@ -790,7 +793,7 @@ def get_expmap_der(x, y, second=False, fdcheck=False, use_loops=False):
                     FDiffV2 /= h ** 2
                     maxerr = np.max(np.abs(dvdq2[p, r] - FDiffV2))
                     if maxerr > 1e-7:
-                        logger.info(
+                        geometric.molecule.logger.info(
                             "q %3i %3i : maxerr = %.3e %s\n"
                             % (p, r, maxerr, "X" if maxerr > 1e-5 else "")
                         )
@@ -803,28 +806,28 @@ def get_expmap_der(x, y, second=False, fdcheck=False, use_loops=False):
         dqdx = get_q_der(x, y)
     # Dimensionality: Number of atoms, number of dimensions (3), number of elements in v (3)
     dvdx = np.zeros((x.shape[0], 3, 3), dtype=float)
-    for u in range(x.shape[0]):
-        for w in range(3):
+    for u in geometric.molecule.range(x.shape[0]):
+        for w in geometric.molecule.range(3):
             dqdx_uw = dqdx[u, w]
-            for p in range(4):
+            for p in geometric.molecule.range(4):
                 dvdx[u, w, :] += dvdq[p, :] * dqdx[u, w, p]
     if second:
         if use_loops:
             # Reference implementation using for loops
             dvdx2 = np.zeros((x.shape[0], 3, x.shape[0], 3, 3), dtype=float)
             dvdqx = np.zeros((4, x.shape[0], 3, 3), dtype=float)
-            for p in range(4):
-                for u in range(x.shape[0]):
-                    for w in range(3):
-                        for i in range(3):
-                            for r in range(4):
+            for p in geometric.molecule.range(4):
+                for u in geometric.molecule.range(x.shape[0]):
+                    for w in geometric.molecule.range(3):
+                        for i in geometric.molecule.range(3):
+                            for r in geometric.molecule.range(4):
                                 dvdqx[p, u, w, i] += dvdq2[p, r, i] * dqdx[u, w, r]
-            for u in range(x.shape[0]):
-                for w in range(3):
-                    for a in range(x.shape[0]):
-                        for b in range(3):
-                            for i in range(3):
-                                for p in range(4):
+            for u in geometric.molecule.range(x.shape[0]):
+                for w in geometric.molecule.range(3):
+                    for a in geometric.molecule.range(x.shape[0]):
+                        for b in geometric.molecule.range(3):
+                            for i in geometric.molecule.range(3):
+                                for p in geometric.molecule.range(4):
                                     dvdx2[u, w, a, b, i] += (
                                         dvdqx[p, a, b, i] * dqdx[u, w, p]
                                     )
@@ -839,12 +842,12 @@ def get_expmap_der(x, y, second=False, fdcheck=False, use_loops=False):
     # print(time.time()-t0)
     if fdcheck:
         h = 1e-3
-        logger.info(
+        geometric.molecule.logger.info(
             "-=# Now checking first derivatives of exponential map w/r.t. Cartesians #=-\n"
         )
         FDiffV = np.zeros((x.shape[0], 3, 3), dtype=float)
-        for u in range(x.shape[0]):
-            for w in range(3):
+        for u in geometric.molecule.range(x.shape[0]):
+            for w in geometric.molecule.range(3):
                 x[u, w] += h
                 VPlus = get_expmap(x, y)
                 x[u, w] -= 2 * h
@@ -852,20 +855,20 @@ def get_expmap_der(x, y, second=False, fdcheck=False, use_loops=False):
                 x[u, w] += h
                 FDiffV[u, w] = (VPlus - VMinus) / (2 * h)
                 maxerr = np.max(np.abs(dvdx[u, w] - FDiffV[u, w]))
-                logger.info(
+                geometric.molecule.logger.info(
                     "atom %3i %s : maxerr = %.3e %s\n"
                     % (u, "xyz"[w], maxerr, "X" if maxerr > 1e-6 else "")
                 )
         dvdx = FDiffV
         if second:
-            logger.info(
+            geometric.molecule.logger.info(
                 "-=# Now checking second derivatives of exponential map w/r.t. Cartesians #=-\n"
             )
             FDiffV2 = np.zeros((x.shape[0], 3, y.shape[0], 3, 3), dtype=float)
-            for u in range(x.shape[0]):
-                for w in range(3):
-                    for a in range(x.shape[0]):
-                        for b in range(3):
+            for u in geometric.molecule.range(x.shape[0]):
+                for w in geometric.molecule.range(3):
+                    for a in geometric.molecule.range(x.shape[0]):
+                        for b in geometric.molecule.range(3):
                             if a == u and b == w:
                                 x[u, w] += h
                                 VPlus = get_expmap(x, y)
@@ -890,7 +893,7 @@ def get_expmap_der(x, y, second=False, fdcheck=False, use_loops=False):
                                 np.abs(dvdx2[u, w, a, b] - FDiffV2[u, w, a, b])
                             )
                             if maxerr > 1e-8:
-                                logger.info(
+                                geometric.molecule.logger.info(
                                     "atom %3i %s, %3i %s : maxerr = %.3e %s\n"
                                     % (
                                         u,
