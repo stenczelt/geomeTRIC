@@ -7,7 +7,7 @@ from geometric.coordinate_systems.linalg import (
     d_unit_vector,
 )
 from geometric.nifty import commadash, logger
-from geometric.rotate import calc_rot_vec_diff, get_expmap, get_expmap_der, is_linear
+from .rotate import calc_rot_vec_diff, get_expmap, get_expmap_der, is_linear
 
 
 class PrimitiveCoordinate(object):

@@ -5,7 +5,7 @@ Copyright 2016-2020 Regents of the University of California and the Authors
 
 Authors: Lee-Ping Wang, Chenchen Song
 
-Contributors: 
+Contributors:
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -38,7 +38,7 @@ import numpy as np
 from numpy.linalg import multi_dot
 
 from .nifty import row, col, flat, invert_svd, bohr2ang, ang2bohr, logger, pvec1d, pmat2d
-from .rotate import get_rot, sorted_eigh
+from .coordinate_systems.rotate import get_rot, sorted_eigh
 
 def between(s, a, b):
     if a < b:
@@ -328,7 +328,7 @@ def rebuild_hessian(IC, H0, coord_seq, grad_seq, params):
 
 def image_gradient_hessian(G, H, indices):
     """
-    Calculate an image quadratic function 
+    Calculate an image quadratic function
     """
     # Sorted eigenvalues and corresponding eigenvectors of the Hessian
     Hvals, Hvecs = sorted_eigh(H, asc=True)
@@ -337,19 +337,19 @@ def image_gradient_hessian(G, H, indices):
     # Gproj = np.dot(Hvecs.T, G)
 
     house = np.eye(G.shape[0])
-    
+
     for i in indices:
         Hvals[i] *= -1
         house -= 2*np.outer(Hvecs[:,i], Hvecs[:,i])
 
     Gs = np.dot(house, G)
-        
+
     Hs = np.zeros_like(H)
     # Gs = np.zeros_like(G)
     for i in range(H.shape[0]):
         Hs += Hvals[i] * np.outer(Hvecs[:,i], Hvecs[:,i])
         # Gs += Gproj[i] * Hvecs[:,i]
-    
+
     return Gs, Hs
 
 def force_positive_definite(H):
@@ -753,7 +753,7 @@ def trust_step(target, v0, X, G, H, IC, rfo, verbose=0):
     while True:
         if rfo:
             # Nonlinear Newton's method solution, from Bofill (1998)
-            v += (target/ndy-1)*(ndy/dy_prime) 
+            v += (target/ndy-1)*(ndy/dy_prime)
         else:
             # Iterative formula from Hebden (1973), equation 5.2.10 in "Practical methods of optimization" by Fletcher
             v += (1-ndy/target)*(ndy/dy_prime)

@@ -48,10 +48,9 @@ from .coordinate_systems.slots import Angle, CartesianX, CartesianY, CartesianZ,
     TranslationY, \
     TranslationZ
 from .engine import set_tcenv, load_tcin, TeraChem, ConicalIntersection, Psi4, QChem, Gromacs, Molpro, OpenMM, QCEngineAPI, Gaussian
-from .rotate import calc_fac_dfac
 from .molecule import Molecule, Elements
 from .nifty import logger, isint, uncommadash, bohr2ang, ang2bohr
-from .rotate import calc_fac_dfac
+from .coordinate_systems.rotate import calc_fac_dfac
 
 def get_molecule_engine(**kwargs):
     """
