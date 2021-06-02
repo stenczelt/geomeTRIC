@@ -34,10 +34,10 @@ jobs:
         run: |
           pytest -v --cov=geometric  geometric/tests/
 
-          # Run a Psi4 command line test if possible
-          cd examples/water2_psi4
-          coverage run `which geometric-optimize` --engine psi4 water2.psi4in
-          cd ../..
+#          # Run a Psi4 command line test if possible
+#          cd examples/water2_psi4
+#          coverage run `which geometric-optimize` --engine psi4 water2.psi4in
+#          cd ../..
 
       - name: Codecov upload
         uses: codecov/codecov-action@v1
