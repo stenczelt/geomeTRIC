@@ -5,9 +5,8 @@ from copy import deepcopy
 import networkx as nx
 import numpy as np
 
-import geometric.coordinate_systems
-from geometric.coordinate_systems.internal_base import InternalCoordinates
-from geometric.coordinate_systems.slots import (
+from .internal_base import InternalCoordinates
+from .slots import (
     Angle,
     CartesianX,
     CartesianY,
@@ -24,8 +23,9 @@ from geometric.coordinate_systems.slots import (
     TranslationX,
     TranslationY,
     TranslationZ,
+    Rotator,
 )
-from geometric.coordinate_systems.convert import convert_angstroms_degrees
+from .convert import convert_angstroms_degrees
 from geometric.molecule import Elements, Radii
 from geometric.nifty import ang2bohr, bohr2ang, logger
 
@@ -541,16 +541,12 @@ class PrimitiveInternalCoordinates(InternalCoordinates):
             if type(Internal) in [RotationA, RotationB, RotationC]:
                 if Internal in self.cPrims:
                     continue
-                if geometric.coordinate_systems.slots.Rotator.stored_norm > 0.9 * np.pi:
+                if Rotator.stored_norm > 0.9 * np.pi:
                     # # Molecule has rotated by almost pi
                     if type(Internal) is RotationA:
                         logger.info(
                             "Large rotation: %s = %.3f*pi\n"
-                            % (
-                                str(Internal),
-                                geometric.coordinate_systems.slots.Rotator.stored_norm
-                                / np.pi,
-                            )
+                            % (str(Internal), Rotator.stored_norm / np.pi,)
                         )
                     return True
         return False
@@ -565,14 +561,14 @@ class PrimitiveInternalCoordinates(InternalCoordinates):
         rots = []
         for Internal in self.Internals:
             if type(Internal) in [RotationA]:
-                rots.append(geometric.coordinate_systems.slots.Rotator.stored_norm)
+                rots.append(Rotator.stored_norm)
         return rots
 
     def getRotatorDots(self):
         dots = []
         for Internal in self.Internals:
             if type(Internal) in [RotationA]:
-                dots.append(geometric.coordinate_systems.slots.Rotator.stored_dot2)
+                dots.append(Rotator.stored_dot2)
         return dots
 
     def printRotations(self, xyz):
@@ -617,7 +613,7 @@ class PrimitiveInternalCoordinates(InternalCoordinates):
         return np.array(answer)
 
     def calcDiff(self, xyz1, xyz2):
-        """ Calculate difference in internal coordinates (coord1-coord2), accounting for changes in 2*pi of angles. """
+        """Calculate difference in internal coordinates (coord1-coord2), accounting for changes in 2*pi of angles."""
         answer = []
         for Internal in self.Internals:
             answer.append(Internal.calcDiff(xyz1, xyz2))
@@ -715,7 +711,7 @@ class PrimitiveInternalCoordinates(InternalCoordinates):
             return np.array(answer)
 
     def calcConstraintDiff(self, xyz, units=False):
-        """ Calculate difference between
+        """Calculate difference between
         (constraint ICs evaluated at provided coordinates - constraint values).
 
         If units=True then the values will be returned in units of Angstrom and degrees

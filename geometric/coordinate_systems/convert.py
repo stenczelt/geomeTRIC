@@ -1,6 +1,6 @@
 import numpy as np
 
-from geometric.coordinate_systems.slots import (
+from .slots import (
     CartesianX,
     CartesianY,
     CartesianZ,
@@ -14,8 +14,8 @@ from geometric.nifty import bohr2ang
 
 
 def convert_angstroms_degrees(prims, values):
-    """ Convert values of primitive ICs (or differences) from
-    weighted atomic units to Angstroms and degrees. """
+    """Convert values of primitive ICs (or differences) from
+    weighted atomic units to Angstroms and degrees."""
     converted = np.array(values).copy()
     for ic, c in enumerate(prims):
         if type(c) in [TranslationX, TranslationY, TranslationZ]:

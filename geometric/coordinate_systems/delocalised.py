@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.linalg import multi_dot
 
-from geometric.coordinate_systems.slots import (
+from .slots import (
     RotationA,
     RotationB,
     RotationC,
@@ -9,8 +9,8 @@ from geometric.coordinate_systems.slots import (
     TranslationY,
     TranslationZ,
 )
-from geometric.coordinate_systems.primitive import PrimitiveInternalCoordinates
-from geometric.coordinate_systems.internal_base import InternalCoordinates
+from .primitive import PrimitiveInternalCoordinates
+from .internal_base import InternalCoordinates
 from geometric.nifty import ang2bohr, click, logger
 
 
