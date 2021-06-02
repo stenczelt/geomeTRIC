@@ -36,15 +36,14 @@ jobs:
           conda activate
 
           # Run a Psi4 command line test if possible
-          cd examples/water2_psi4
-          coverage run `which geometric-optimize` --engine psi4 water2.psi4in
+          coverage run `which geometric-optimize` --engine psi4 examples/water2_psi4/water2.psi4in
           coverage xml
 
       - name: Codecov upload
         uses: codecov/codecov-action@v1
         with:
           flags: psi4-test
-          files: examples/water2_psi4/coverage.xml
+          files: coverage.xml
           name: codecov-cli
           fail_ci_if_error: true
           verbose: true
