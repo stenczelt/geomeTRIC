@@ -52,6 +52,9 @@ class InternalCoordinateSystemBase(ABC):
     def calculate(self, xyz):
         ...
 
+    def __repr__(self):
+        pass
+
     def clearCache(self):
         self.stored_wilsonB = OrderedDict()
 

@@ -67,9 +67,6 @@ class DelocalizedInternalCoordinates(MixIC):
         super(DelocalizedInternalCoordinates, self).clearCache()
         self.Prims.clearCache()
 
-    def __repr__(self):
-        return self.Prims.__repr__()
-
     def update(self, other):
         return self.Prims.update(other.Prims)
 
@@ -656,53 +653,6 @@ class DelocalizedInternalCoordinates(MixIC):
         for i in range(len(self.Internals)):
             self.Vecs[:, i] *= dxdq[i]
 
-    def __eq__(self, other):
-        return self.Prims == other.Prims
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def torsionConstraintLinearAngles(self, coords, thre=175):
-        """ Check if certain problems might be happening due to three consecutive atoms in a torsion angle becoming linear. """
-        return self.Prims.torsionConstraintLinearAngles(coords, thre)
-
-    def linearRotCheck(self):
-        """ Check if certain problems might be happening due to rotations of linear molecules. """
-        return self.Prims.linearRotCheck()
-
-    def largeRots(self):
-        """ Determine whether a molecule has rotated by an amount larger than some threshold (hardcoded in Prims.largeRots()). """
-        return self.Prims.largeRots()
-
-    def printRotations(self, xyz):
-        return self.Prims.printRotations(xyz)
-
-    def calcDiff(self, coord1, coord2):
-        """ Calculate difference in internal coordinates (coord1-coord2), accounting for changes in 2*pi of angles. """
-        PMDiff = self.Prims.calcDiff(coord1, coord2)
-        Answer = np.dot(PMDiff, self.Vecs)
-        return np.array(Answer).flatten()
-
-    def derivatives(self, coords):
-        """ Obtain the change of the DLCs with respect to the Cartesian coordinates. """
-        PrimDers = self.Prims.derivatives(coords)
-        # The following code does the same as "tensordot"
-        # print PrimDers.shape
-        # print self.Vecs.shape
-        # Answer = np.zeros((self.Vecs.shape[1], PrimDers.shape[1], PrimDers.shape[2]), dtype=float)
-        # for i in range(self.Vecs.shape[1]):
-        #     for j in range(self.Vecs.shape[0]):
-        #         Answer[i, :, :] += self.Vecs[j, i] * PrimDers[j, :, :]
-        # print Answer.shape
-        Answer1 = np.tensordot(self.Vecs, PrimDers, axes=(0, 0))
-        return np.array(Answer1)
-
-    def second_derivatives(self, coords):
-        """ Obtain the second derivatives of the DLCs with respect to the Cartesian coordinates. """
-        PrimDers = self.Prims.second_derivatives(coords)
-        Answer2 = np.tensordot(self.Vecs, PrimDers, axes=(0, 0))
-        return np.array(Answer2)
-
     def repr_diff(self, other):
         if hasattr(other, "Prims"):
             return self.Prims.repr_diff(other.Prims)
@@ -718,6 +668,3 @@ class DelocalizedInternalCoordinates(MixIC):
         Hprim = self.Prims.guess_hessian(coords)
         return multi_dot([self.Vecs.T, Hprim, self.Vecs])
 
-    def resetRotations(self, xyz):
-        """ Reset the reference geometries for calculating the orientational variables. """
-        self.Prims.resetRotations(xyz)

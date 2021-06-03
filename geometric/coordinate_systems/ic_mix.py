@@ -2,8 +2,8 @@ from abc import ABC
 
 import numpy as np
 
-from geometric.coordinate_systems.internal_base import InternalCoordinateSystemBase
-from geometric.coordinate_systems.ic_simple import SimpleIC
+from .internal_base import InternalCoordinateSystemBase
+from .ic_simple import SimpleIC
 
 
 class MixIC(InternalCoordinateSystemBase, ABC):
@@ -13,10 +13,14 @@ class MixIC(InternalCoordinateSystemBase, ABC):
     The over-complete IC system is stored in self.Prims
     """
 
+    # type hints
+    Prims: SimpleIC
+
     def __init__(self, molecule):
         super(MixIC, self).__init__(molecule)
 
-        self.Prims: SimpleIC = None
+        self.Prims = None
+        self.Vecs = None
 
     def add(self, dof):
         # for now we are not adding anything here, that is done when we are building the Prims
@@ -34,3 +38,57 @@ class MixIC(InternalCoordinateSystemBase, ABC):
         # print PrimVals[0]
         # raw_input()
         return np.array(Answer).flatten()
+
+    def derivatives(self, coords):
+        """ Obtain the change of the DLCs with respect to the Cartesian coordinates. """
+        PrimDers = self.Prims.derivatives(coords)
+        # The following code does the same as "tensordot"
+        # print PrimDers.shape
+        # print self.Vecs.shape
+        # Answer = np.zeros((self.Vecs.shape[1], PrimDers.shape[1], PrimDers.shape[2]), dtype=float)
+        # for i in range(self.Vecs.shape[1]):
+        #     for j in range(self.Vecs.shape[0]):
+        #         Answer[i, :, :] += self.Vecs[j, i] * PrimDers[j, :, :]
+        # print Answer.shape
+        Answer1 = np.tensordot(self.Vecs, PrimDers, axes=(0, 0))
+        return np.array(Answer1)
+
+    def __repr__(self):
+        return self.Prims.__repr__()
+
+    def __eq__(self, other):
+        return self.Prims == other.Prims
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def second_derivatives(self, coords):
+        """ Obtain the second derivatives of the DLCs with respect to the Cartesian coordinates. """
+        PrimDers = self.Prims.second_derivatives(coords)
+        Answer2 = np.tensordot(self.Vecs, PrimDers, axes=(0, 0))
+        return np.array(Answer2)
+
+    def torsionConstraintLinearAngles(self, coords, thre=175):
+        """ Check if certain problems might be happening due to three consecutive atoms in a torsion angle becoming linear. """
+        return self.Prims.torsionConstraintLinearAngles(coords, thre)
+
+    def linearRotCheck(self):
+        """ Check if certain problems might be happening due to rotations of linear molecules. """
+        return self.Prims.linearRotCheck()
+
+    def largeRots(self):
+        """ Determine whether a molecule has rotated by an amount larger than some threshold (hardcoded in Prims.largeRots()). """
+        return self.Prims.largeRots()
+
+    def printRotations(self, xyz):
+        return self.Prims.printRotations(xyz)
+
+    def calcDiff(self, coord1, coord2):
+        """ Calculate difference in internal coordinates (coord1-coord2), accounting for changes in 2*pi of angles. """
+        PMDiff = self.Prims.calcDiff(coord1, coord2)
+        Answer = np.dot(PMDiff, self.Vecs)
+        return np.array(Answer).flatten()
+
+    def resetRotations(self, xyz):
+        """ Reset the reference geometries for calculating the orientational variables. """
+        self.Prims.resetRotations(xyz)
