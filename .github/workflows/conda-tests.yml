@@ -32,7 +32,7 @@ jobs:
 
       - name: Test with pytest - coverage
         run: |
-          pytest -v --cov=geometric  geometric/tests/
+          pytest -v --cov-branch --cov=geometric  geometric/tests/
 
 #          # Run a Psi4 command line test if possible
 #          cd examples/water2_psi4
