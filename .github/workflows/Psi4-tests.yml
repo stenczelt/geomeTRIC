@@ -35,8 +35,11 @@ jobs:
           source "$HOME/miniconda/etc/profile.d/conda.sh"
           conda activate
 
+          # run pytest
+          pytest -v --cov=geometric  geometric/tests/
+
           # Run a Psi4 command line test if possible
-          coverage run `which geometric-optimize` --engine psi4 examples/water2_psi4/water2.psi4in
+          coverage run --append `which geometric-optimize` --engine psi4 examples/water2_psi4/water2.psi4in
           coverage xml
 
       - name: Codecov upload
