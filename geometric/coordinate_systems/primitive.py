@@ -19,7 +19,6 @@ from .slots import (
     RotationA,
     RotationB,
     RotationC,
-    Rotator,
     TranslationX,
     TranslationY,
     TranslationZ,
@@ -383,21 +382,3 @@ class PrimitiveInternalCoordinates(SimpleIC):
         #                 # print MultiDihedral(al, b, c, dl)
         #                 self.delete(Dihedral(al[-1], b, c, dl[0]))
         #                 self.add(MultiDihedral(al, b, c, dl))
-
-    # def calculate(self, xyz):
-    #     answer = []
-    #     for Internal in self.Internals:
-    #         answer.append(Internal.value(xyz))
-    #     return np.array(answer)
-
-    def getRotatorDots(self):
-        dots = []
-        for Internal in self.Internals:
-            if type(Internal) in [RotationA]:
-                dots.append(Rotator.stored_dot2)
-        return dots
-
-    def delete(self, dof):
-        for ii in range(len(self.Internals))[::-1]:
-            if dof == self.Internals[ii]:
-                del self.Internals[ii]

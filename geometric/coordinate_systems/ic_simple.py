@@ -504,3 +504,16 @@ class SimpleIC(InternalCoordinateSystemBase, ABC):
                 )
             for cons, cval in zip(constraints, cvals):
                 self.addConstraint(cons, cval, xyz)
+
+    def delete(self, dof):
+        for ii in range(len(self.Internals))[::-1]:
+            if dof == self.Internals[ii]:
+                del self.Internals[ii]
+
+    def getRotatorDots(self):
+        # fixme: seem not to be used at all
+        dots = []
+        for Internal in self.Internals:
+            if type(Internal) in [RotationA]:
+                dots.append(Rotator.stored_dot2)
+        return dots
