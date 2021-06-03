@@ -591,27 +591,3 @@ class DelocalizedInternalCoordinates(MixIC):
             "Constraint" if i < ncon else "DLC" + " %i" % (i + 1)
             for i in range(self.Vecs.shape[1])
         ]
-
-    def weight_vectors(self, xyz):
-        """
-        Not used anymore: Multiply each DLC by a constant so that a small displacement along each produces the
-        same Cartesian displacement. Otherwise, some DLCs "move by a lot" and others only "move by a little".
-
-        Parameters
-        ----------
-        xyz : np.ndarray
-            Flat array containing Cartesian coordinates in atomic units
-        """
-        Bmat = self.wilsonB(xyz)
-        Ginv = self.GInverse(xyz, None)
-        eps = 1e-6
-        dxdq = np.zeros(len(self.Internals))
-        for i in range(len(self.Internals)):
-            dQ = np.zeros(len(self.Internals), dtype=float)
-            dQ[i] = eps
-            dxyz = multi_dot([Bmat.T, Ginv, dQ.T])
-            rmsd = np.sqrt(np.mean(np.sum(np.array(dxyz).reshape(-1, 3) ** 2, axis=1)))
-            dxdq[i] = rmsd / eps
-        dxdq /= np.max(dxdq)
-        for i in range(len(self.Internals)):
-            self.Vecs[:, i] *= dxdq[i]
