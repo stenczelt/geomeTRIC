@@ -1,6 +1,6 @@
 import numpy as np
 
-from .internal_base import SimpleIC
+from .ic_simple import SimpleIC
 from .slots import CartesianX, CartesianY, CartesianZ
 
 

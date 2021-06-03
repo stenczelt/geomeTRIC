@@ -5,7 +5,7 @@ from copy import deepcopy
 import networkx as nx
 import numpy as np
 
-from .internal_base import SimpleIC
+from .ic_simple import SimpleIC
 from .slots import (
     Angle,
     CartesianX,

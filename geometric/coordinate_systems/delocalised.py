@@ -10,7 +10,7 @@ from .slots import (
     TranslationZ,
 )
 from .primitive import PrimitiveInternalCoordinates
-from .internal_base import MixIC
+from .ic_mix import MixIC
 from geometric.nifty import ang2bohr, click, logger
 
 
@@ -519,6 +519,8 @@ class DelocalizedInternalCoordinates(MixIC):
         # print(L)
 
     def build_dlc(self, xyz):
+        # 0 - Original algorithm implemented in 2016, constraints are satisfied slowly unless "enforce" is enabled
+        # 1 - Updated algorithm implemented on 2019-03-20, constraints are satisfied instantly, "enforce" is not needed
         if self.conmethod == 1:
             return self.build_dlc_1(xyz)
         elif self.conmethod == 0:
