@@ -63,43 +63,6 @@ class DelocalizedInternalCoordinates(MixIC):
         if self.remove_tr:
             self.remove_TR(xyz)
 
-    def clearCache(self):
-        super(DelocalizedInternalCoordinates, self).clearCache()
-        self.Prims.clearCache()
-
-    def update(self, other):
-        return self.Prims.update(other.Prims)
-
-    def join(self, other):
-        return self.Prims.join(other.Prims)
-
-    def addConstraint(self, cPrim, cVal, xyz):
-        self.Prims.addConstraint(cPrim, cVal, xyz)
-
-    def getConstraints_from(self, other):
-        self.Prims.getConstraints_from(other.Prims)
-
-    def haveConstraints(self):
-        return len(self.Prims.cPrims) > 0
-
-    def getConstraintNames(self):
-        return self.Prims.getConstraintNames()
-
-    def getConstraintTargetVals(self, units=True):
-        return self.Prims.getConstraintTargetVals(units=units)
-
-    def getConstraintCurrentVals(self, xyz, units=True):
-        return self.Prims.getConstraintCurrentVals(xyz, units=units)
-
-    def calcConstraintDiff(self, xyz, units=False):
-        return self.Prims.calcConstraintDiff(xyz, units=units)
-
-    def maxConstraintViolation(self, xyz):
-        return self.Prims.maxConstraintViolation(xyz)
-
-    def printConstraints(self, xyz, thre=1e-5):
-        self.Prims.printConstraints(xyz, thre=thre)
-
     def augmentGH(self, xyz, G, H):
         """
         Add extra dimensions to the gradient and Hessian corresponding to the constrained degrees of freedom.
@@ -652,19 +615,3 @@ class DelocalizedInternalCoordinates(MixIC):
         dxdq /= np.max(dxdq)
         for i in range(len(self.Internals)):
             self.Vecs[:, i] *= dxdq[i]
-
-    def repr_diff(self, other):
-        if hasattr(other, "Prims"):
-            return self.Prims.repr_diff(other.Prims)
-        else:
-            if self.Prims.repr_diff(other) == "":
-                return "Delocalized -> Primitive"
-            else:
-                return "Delocalized -> Primitive\n" + self.Prims.repr_diff(other)
-
-    def guess_hessian(self, coords):
-        """ Build the guess Hessian, consisting of a diagonal matrix
-        in the primitive space and changed to the basis of DLCs. """
-        Hprim = self.Prims.guess_hessian(coords)
-        return multi_dot([self.Vecs.T, Hprim, self.Vecs])
-

@@ -29,12 +29,17 @@ class CartesianCoordinates(SimpleIC):
     def guess_hessian(self, xyz):
         return 0.5 * np.eye(len(xyz.flatten()))
 
-    def addConstraint(self, cPrim, cVal):
+    def addConstraint(self, cPrim=None, cVal=None, xyz=None):
         raise NotImplementedError(
             "Constraints not supported with Cartesian coordinates"
         )
 
     def haveConstraints(self):
+        raise NotImplementedError(
+            "Constraints not supported with Cartesian coordinates"
+        )
+
+    def makeConstraints(self, molecule, constraints, cvals):
         raise NotImplementedError(
             "Constraints not supported with Cartesian coordinates"
         )

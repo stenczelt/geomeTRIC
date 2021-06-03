@@ -5,6 +5,7 @@ import numpy as np
 
 from geometric.molecule import Elements, Radii
 from geometric.nifty import ang2bohr, bohr2ang, logger
+from .convert import convert_angstroms_degrees
 from .internal_base import InternalCoordinateSystemBase
 from .slots import (
     Angle,
@@ -36,6 +37,8 @@ class SimpleIC(InternalCoordinateSystemBase, ABC):
         super(SimpleIC, self).__init__(molecule)
 
         self.Internals = []
+        self.cPrims = []
+        self.cVals = []
         self.Rotators = OrderedDict()
         self.elem = molecule.elem
 
@@ -305,3 +308,199 @@ class SimpleIC(InternalCoordinateSystemBase, ABC):
                 Internal.reset(xyz)
         for rot in self.Rotators.values():
             rot.reset(xyz)
+
+    def update(self, other):
+        Changed = False
+        for i in self.Internals:
+            if i not in other.Internals:
+                if hasattr(i, "inactive"):
+                    i.inactive += 1
+                else:
+                    i.inactive = 0
+                if i.inactive == 1:
+                    logger.info("Deleting:" + str(i) + "\n")
+                    self.Internals.remove(i)
+                    Changed = True
+            else:
+                i.inactive = 0
+        for i in other.Internals:
+            if i not in self.Internals:
+                logger.info("Adding:  " + str(i) + "\n")
+                self.Internals.append(i)
+                Changed = True
+        return Changed
+
+    def join(self, other):
+        Changed = False
+        for i in other.Internals:
+            if i not in self.Internals:
+                logger.info("Adding:  " + str(i) + "\n")
+                self.Internals.append(i)
+                Changed = True
+        return Changed
+
+    def repr_diff(self, other):
+        if hasattr(other, "Prims"):
+            output = ["Primitive -> Delocalized"]
+            otherPrims = other.Prims
+        else:
+            output = []
+            otherPrims = other
+        alines = ["-- Added: --"]
+        for i in otherPrims.Internals:
+            if i not in self.Internals:
+                alines.append(i.__repr__())
+        dlines = ["-- Deleted: --"]
+        for i in self.Internals:
+            if i not in otherPrims.Internals:
+                dlines.append(i.__repr__())
+        if len(alines) > 1:
+            output += alines
+        if len(dlines) > 1:
+            output += dlines
+        return "\n".join(output)
+
+    def addConstraint(self, cPrim, cVal=None, xyz=None):
+        if cVal is None and xyz is None:
+            raise RuntimeError("Please provide either cval or xyz")
+        if cVal is None:
+            # If coordinates are provided instead of a constraint value,
+            # then calculate the constraint value from the positions.
+            # If both are provided, then the coordinates are ignored.
+            cVal = cPrim.value(xyz)
+        if cPrim in self.cPrims:
+            iPrim = self.cPrims.index(cPrim)
+            if np.abs(cVal - self.cVals[iPrim]) > 1e-6:
+                logger.info("Updating constraint value to %.4e\n" % cVal)
+            self.cVals[iPrim] = cVal
+        else:
+            if cPrim not in self.Internals:
+                self.Internals.append(cPrim)
+            self.cPrims.append(cPrim)
+            self.cVals.append(cVal)
+
+    def getConstraints_from(self, other):
+        if other.haveConstraints():
+            for cPrim, cVal in zip(other.cPrims, other.cVals):
+                self.addConstraint(cPrim, cVal)
+        self.reorderPrimitives()
+
+    def reorderPrimitives(self):
+        # Reorder primitives to be in line with cc's code
+        newPrims = []
+        for cPrim in self.cPrims:
+            newPrims.append(cPrim)
+        for typ in [
+            Distance,
+            Angle,
+            LinearAngle,
+            MultiAngle,
+            OutOfPlane,
+            Dihedral,
+            MultiDihedral,
+            CartesianX,
+            CartesianY,
+            CartesianZ,
+            TranslationX,
+            TranslationY,
+            TranslationZ,
+            RotationA,
+            RotationB,
+            RotationC,
+        ]:
+            for p in self.Internals:
+                if type(p) is typ and p not in self.cPrims:
+                    newPrims.append(p)
+        if len(newPrims) != len(self.Internals):
+            raise RuntimeError(
+                "Not all internal coordinates have been accounted for. You may need to add something to reorderPrimitives()"
+            )
+        self.Internals = newPrims
+
+    def getConstraintNames(self):
+        return [str(c) for c in self.cPrims]
+
+    def getConstraintTargetVals(self, units=False):
+        if units:
+            return convert_angstroms_degrees(self.cPrims, self.cVals)
+        else:
+            return self.cVals
+
+    def getConstraintCurrentVals(self, xyz, units=False):
+        answer = []
+        for ic, c in enumerate(self.cPrims):
+            value = c.value(xyz)
+            answer.append(value)
+        if units:
+            return convert_angstroms_degrees(self.cPrims, np.array(answer))
+        else:
+            return np.array(answer)
+
+    def calcConstraintDiff(self, xyz, units=False):
+        """Calculate difference between
+        (constraint ICs evaluated at provided coordinates - constraint values).
+
+        If units=True then the values will be returned in units of Angstrom and degrees
+        for distance and angle degrees of freedom respectively.
+        """
+        cDiffs = np.zeros(len(self.cPrims), dtype=float)
+        for ic, c in enumerate(self.cPrims):
+            # Calculate the further change needed in this constrained variable
+            if type(c) is RotationA:
+                ca = c
+                cb = self.cPrims[ic + 1]
+                cc = self.cPrims[ic + 2]
+                if type(cb) is not RotationB or type(cc) is not RotationC:
+                    raise RuntimeError(
+                        "In primitive internal coordinates, RotationA must be followed by RotationB and RotationC."
+                    )
+                if len(set([ca.w, cb.w, cc.w])) != 1:
+                    raise RuntimeError(
+                        "The triple of rotation ICs need to have the same weight."
+                    )
+                cDiffs[ic] = ca.calcDiff(xyz, val2=self.cVals[ic : ic + 3] / c.w)
+                cDiffs[ic + 1] = cb.calcDiff(xyz, val2=self.cVals[ic : ic + 3] / c.w)
+                cDiffs[ic + 2] = cc.calcDiff(xyz, val2=self.cVals[ic : ic + 3] / c.w)
+            elif type(c) in [RotationB, RotationC]:
+                pass
+            else:
+                cDiffs[ic] = c.calcDiff(xyz, val2=self.cVals[ic])
+        if units:
+            return convert_angstroms_degrees(self.cPrims, cDiffs)
+        else:
+            return cDiffs
+
+    def maxConstraintViolation(self, xyz):
+        cDiffs = self.calcConstraintDiff(xyz, units=True)
+        return np.max(np.abs(cDiffs))
+
+    def printConstraints(self, xyz, thre=1e-5):
+        nc = len(self.cPrims)
+        out_lines = []
+        header = "Constraint                         Current      Target       Diff."
+        curr = self.getConstraintCurrentVals(xyz, units=True)
+        refs = self.getConstraintTargetVals(units=True)
+        diff = self.calcConstraintDiff(xyz, units=True)
+        for ic, c in enumerate(self.cPrims):
+            if np.abs(diff[ic]) > thre:
+                out_lines.append(
+                    "%-30s  % 10.5f  % 10.5f  % 10.5f"
+                    % (str(c), curr[ic], refs[ic], diff[ic])
+                )
+        if len(out_lines) > 0:
+            logger.info(header + "\n")
+            logger.info("\n".join(out_lines) + "\n")
+
+    def haveConstraints(self):
+        return len(self.cPrims) > 0
+
+    def makeConstraints(self, molecule, constraints, cvals):
+        # Add the list of constraints.
+        xyz = molecule.xyzs[0].flatten() * ang2bohr
+        if constraints is not None:
+            if len(constraints) != len(cvals):
+                raise RuntimeError(
+                    "List of constraints should be same length as constraint values"
+                )
+            for cons, cval in zip(constraints, cvals):
+                self.addConstraint(cons, cval, xyz)

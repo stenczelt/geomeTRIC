@@ -32,7 +32,7 @@ class InternalCoordinateSystemBase(ABC):
         self.stored_wilsonB = OrderedDict()
 
     @abstractmethod
-    def addConstraint(self, cPrim, cVal):
+    def addConstraint(self, cPrim, cVal, xyz):
         ...
 
     @abstractmethod
@@ -50,6 +50,14 @@ class InternalCoordinateSystemBase(ABC):
 
     @abstractmethod
     def calculate(self, xyz):
+        ...
+
+    @abstractmethod
+    def calcDiff(self, xyz1, xyz2):
+        ...
+
+    @abstractmethod
+    def second_derivatives(self, xyz):
         ...
 
     def __repr__(self):

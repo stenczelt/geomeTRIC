@@ -1,9 +1,10 @@
 from abc import ABC
 
 import numpy as np
+from numpy.linalg import multi_dot
 
-from .internal_base import InternalCoordinateSystemBase
 from .ic_simple import SimpleIC
+from .internal_base import InternalCoordinateSystemBase
 
 
 class MixIC(InternalCoordinateSystemBase, ABC):
@@ -92,3 +93,55 @@ class MixIC(InternalCoordinateSystemBase, ABC):
     def resetRotations(self, xyz):
         """ Reset the reference geometries for calculating the orientational variables. """
         self.Prims.resetRotations(xyz)
+
+    def repr_diff(self, other):
+        if hasattr(other, "Prims"):
+            return self.Prims.repr_diff(other.Prims)
+        else:
+            if self.Prims.repr_diff(other) == "":
+                return "Delocalized -> Primitive"
+            else:
+                return "Delocalized -> Primitive\n" + self.Prims.repr_diff(other)
+
+    def guess_hessian(self, coords):
+        """ Build the guess Hessian, consisting of a diagonal matrix
+        in the primitive space and changed to the basis of DLCs. """
+        Hprim = self.Prims.guess_hessian(coords)
+        return multi_dot([self.Vecs.T, Hprim, self.Vecs])
+
+    def addConstraint(self, cPrim, cVal, xyz):
+        self.Prims.addConstraint(cPrim, cVal, xyz)
+
+    def getConstraints_from(self, other):
+        self.Prims.getConstraints_from(other.Prims)
+
+    def haveConstraints(self):
+        return len(self.Prims.cPrims) > 0
+
+    def getConstraintNames(self):
+        return self.Prims.getConstraintNames()
+
+    def getConstraintTargetVals(self, units=True):
+        return self.Prims.getConstraintTargetVals(units=units)
+
+    def getConstraintCurrentVals(self, xyz, units=True):
+        return self.Prims.getConstraintCurrentVals(xyz, units=units)
+
+    def calcConstraintDiff(self, xyz, units=False):
+        return self.Prims.calcConstraintDiff(xyz, units=units)
+
+    def maxConstraintViolation(self, xyz):
+        return self.Prims.maxConstraintViolation(xyz)
+
+    def printConstraints(self, xyz, thre=1e-5):
+        self.Prims.printConstraints(xyz, thre=thre)
+
+    def update(self, other):
+        return self.Prims.update(other.Prims)
+
+    def join(self, other):
+        return self.Prims.join(other.Prims)
+
+    def clearCache(self):
+        super(MixIC, self).clearCache()
+        self.Prims.clearCache()
