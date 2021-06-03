@@ -25,6 +25,8 @@ jobs:
           source "$HOME/miniconda/etc/profile.d/conda.sh"
           conda activate
 
+          # install dependencies for tests
+          conda install -c rdkit rdkit
           conda install coverage pytest-cov pytest numpy networkx
 
           # Build and install package
