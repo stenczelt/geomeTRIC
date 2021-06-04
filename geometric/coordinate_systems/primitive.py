@@ -5,8 +5,8 @@ from copy import deepcopy
 import networkx as nx
 import numpy as np
 
-from geometric.nifty import ang2bohr
 from geometric.molecule import Molecule
+from geometric.nifty import ang2bohr
 from .ic_simple import SimpleIC
 from .slots import (
     Angle,
@@ -61,6 +61,13 @@ class PrimitiveInternalCoordinates(SimpleIC):
             self.add(CartesianX(i, w=1.0))
             self.add(CartesianY(i, w=1.0))
             self.add(CartesianZ(i, w=1.0))
+
+    def build_bonds(self, molecule: Molecule):
+        # builds bonds
+
+        # Add an internal coordinate for all interatomic distances
+        for (a, b) in molecule.topology.edges():
+            self.add(Distance(a, b))
 
     def build_primitives_dlc_connections(self, molecule: Molecule):
         # DLC kind of connections
@@ -127,9 +134,6 @@ class PrimitiveInternalCoordinates(SimpleIC):
                     self.add(CartesianZ(j, w=1.0))
 
     def makePrimitives(self, molecule: Molecule):
-        # coordinates in Angstrom
-        coords = molecule.xyzs[0].flatten()
-
         # Connections of fragments for each coordinate type
         if self.connect:
             # this is DLC
@@ -142,9 +146,15 @@ class PrimitiveInternalCoordinates(SimpleIC):
                 # this is TRIC
                 self.build_primitives_tric_connections(molecule)
 
-        # Add an internal coordinate for all interatomic distances
-        for (a, b) in molecule.topology.edges():
-            self.add(Distance(a, b))
+        # bonds with non-covalent bonds included if built
+        self.build_bonds(molecule)
+
+        # angles and dihedrals
+        self.build_angles_and_dihedrals(molecule)
+
+    def build_angles_and_dihedrals(self, molecule):
+        # coordinates in Angstrom
+        coords = molecule.xyzs[0].flatten()
 
         # Add an internal coordinate for all angles
         # LinThre = 0.99619469809174555
