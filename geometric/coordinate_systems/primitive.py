@@ -82,13 +82,13 @@ class PrimitiveInternalCoordinates(SimpleIC):
         # Build a list of noncovalent distances
         noncov = []
         # Connect all non-bonded fragments together
-        for edge in mst:
-            if edge not in list(molecule.topology.edges()):
-                # print "Adding %s from minimum spanning tree" % str(edge)
-                if self.connect:
+        if self.connect:
+            for edge in mst:
+                if edge not in list(molecule.topology.edges()):
+                    # print "Adding %s from minimum spanning tree" % str(edge)
                     molecule.topology.add_edge(edge[0], edge[1])
                     noncov.append(edge)
-        if not self.connect:
+        else:
             if self.addcart:
                 for i in range(molecule.na):
                     self.add(CartesianX(i, w=1.0))
@@ -112,19 +112,6 @@ class PrimitiveInternalCoordinates(SimpleIC):
                             self.add(CartesianX(j, w=1.0))
                             self.add(CartesianY(j, w=1.0))
                             self.add(CartesianZ(j, w=1.0))
-        add_tr = False
-        if add_tr:
-            i = range(molecule.na)
-            self.add(TranslationX(i, w=np.ones(len(i)) / len(i)))
-            self.add(TranslationY(i, w=np.ones(len(i)) / len(i)))
-            self.add(TranslationZ(i, w=np.ones(len(i)) / len(i)))
-            # Reference coordinates are given in Bohr.
-            sel = coords.reshape(-1, 3)[i, :] * ang2bohr
-            sel -= np.mean(sel, axis=0)
-            rg = np.sqrt(np.mean(np.sum(sel ** 2, axis=1)))
-            self.add(RotationA(i, coords * ang2bohr, self.Rotators, w=rg))
-            self.add(RotationB(i, coords * ang2bohr, self.Rotators, w=rg))
-            self.add(RotationC(i, coords * ang2bohr, self.Rotators, w=rg))
 
         # Add an internal coordinate for all interatomic distances
         for (a, b) in molecule.topology.edges():
