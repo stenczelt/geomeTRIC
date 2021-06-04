@@ -17,24 +17,25 @@ class DelocalizedInternalCoordinates(MixIC):
         constraints=None,
         cvals=None,
         remove_tr=False,
-        cart_only=False,
         conmethod=0,
     ):
         super(DelocalizedInternalCoordinates, self).__init__(molecule)
-        # cart_only is just because of how I set up the class structure.
-        if cart_only:
-            return
+
         # Set the algorithm for constraint satisfaction.
         # 0 - Original algorithm implemented in 2016, constraints are satisfied slowly unless "enforce" is enabled
         # 1 - Updated algorithm implemented on 2019-03-20, constraints are satisfied instantly, "enforce" is not needed
         self.conmethod = conmethod
+
         # HDLC is given by (connect = False, addcart = True)
         # Standard DLC is given by (connect = True, addcart = False)
         # TRIC is given by (connect = False, addcart = False)
+
         # Build a minimum spanning tree
         self.connect = connect
+
         # Add Cartesian coordinates to all.
         self.addcart = addcart
+
         # The DLC contains an instance of primitive internal coordinates.
         self.Prims = PrimitiveInternalCoordinates(
             molecule,
@@ -44,9 +45,11 @@ class DelocalizedInternalCoordinates(MixIC):
             cvals=cvals,
         )
         self.na = molecule.na
+
         # Whether constraints have been enforced previously
         self.enforced = False
         self.enforce_fail_printed = False
+
         # Build the DLC's. This takes some time, so we have the option to turn it off.
         xyz = molecule.xyzs[imagenr].flatten() * ang2bohr
         if build:
@@ -324,4 +327,3 @@ class DelocalizedInternalCoordinates(MixIC):
             return self.build_dlc_0(xyz)
         else:
             raise RuntimeError("Unsupported value of conmethod %i" % self.conmethod)
-

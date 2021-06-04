@@ -54,7 +54,7 @@ class PrimitiveInternalCoordinates(SimpleIC):
         # Note that reorderPrimitives() _must_ be updated with each new InternalCoordinate class written.
         self.reorderPrimitives()
 
-    def build_primitives_all_cartesians(self, molecule: Molecule):
+    def build_all_cartesians(self, molecule: Molecule):
         # adding all Cartesians of the molecule
         # use for HDLC
         for i in range(molecule.na):
@@ -69,7 +69,7 @@ class PrimitiveInternalCoordinates(SimpleIC):
         for (a, b) in molecule.topology.edges():
             self.add(Distance(a, b))
 
-    def build_primitives_dlc_connections(self, molecule: Molecule):
+    def build_dlc_connections(self, molecule: Molecule):
         # DLC kind of connections
 
         # Make a distance matrix mapping atom pairs to interatomic distances
@@ -94,7 +94,7 @@ class PrimitiveInternalCoordinates(SimpleIC):
 
         # now you should call build_bonds and build_angles!
 
-    def build_primitives_tric_connections(self, molecule: Molecule):
+    def build_tric_connections(self, molecule: Molecule):
         # connections between molecules for TRIC type coordinates
 
         # find the fragments
@@ -137,14 +137,14 @@ class PrimitiveInternalCoordinates(SimpleIC):
         # Connections of fragments for each coordinate type
         if self.connect:
             # this is DLC
-            self.build_primitives_dlc_connections(molecule)
+            self.build_dlc_connections(molecule)
         else:
             if self.addcart:
                 # this HDLC
-                self.build_primitives_all_cartesians(molecule)
+                self.build_all_cartesians(molecule)
             else:
                 # this is TRIC
-                self.build_primitives_tric_connections(molecule)
+                self.build_tric_connections(molecule)
 
         # bonds with non-covalent bonds included if built
         self.build_bonds(molecule)
