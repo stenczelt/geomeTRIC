@@ -29,6 +29,7 @@ class InternalCoordinateSystemBase(ABC):
     """
 
     def __init__(self, molecule):
+        self.molecule = molecule
         self.stored_wilsonB = OrderedDict()
 
     @abstractmethod

@@ -38,15 +38,18 @@ class PrimitiveInternalCoordinates(SimpleIC):
         super(PrimitiveInternalCoordinates, self).__init__(molecule)
         self.connect = connect
         self.addcart = addcart
-        for i in range(len(molecule)):
-            self.makePrimitives(molecule[i], connect, addcart)
+
+        for i in range(len(self.molecule)):
+            self.makePrimitives(self.molecule[i])
+
         # Assume we're using the first image for constraints
-        self.makeConstraints(molecule[0], constraints, cvals)
+        self.makeConstraints(self.molecule[0], constraints, cvals)
+
         # Reorder primitives for checking with cc's code in TC.
         # Note that reorderPrimitives() _must_ be updated with each new InternalCoordinate class written.
         self.reorderPrimitives()
 
-    def makePrimitives(self, molecule, connect, addcart):
+    def makePrimitives(self, molecule):
         molecule.build_topology()
         if "resid" in molecule.Data.keys():
             frags = []
@@ -59,8 +62,10 @@ class PrimitiveInternalCoordinates(SimpleIC):
                     frags[-1].append(i)
         else:
             frags = [m.nodes() for m in molecule.molecules]
+
         # coordinates in Angstrom
         coords = molecule.xyzs[0].flatten()
+
         # Make a distance matrix mapping atom pairs to interatomic distances
         AtomIterator, dxij = molecule.distance_matrix(pbc=False)
         D = {}
@@ -73,17 +78,18 @@ class PrimitiveInternalCoordinates(SimpleIC):
         for k, v in D.items():
             dgraph.add_edge(k[0], k[1], weight=v)
         mst = sorted(list(nx.minimum_spanning_edges(dgraph, data=False)))
+
         # Build a list of noncovalent distances
         noncov = []
         # Connect all non-bonded fragments together
         for edge in mst:
             if edge not in list(molecule.topology.edges()):
                 # print "Adding %s from minimum spanning tree" % str(edge)
-                if connect:
+                if self.connect:
                     molecule.topology.add_edge(edge[0], edge[1])
                     noncov.append(edge)
-        if not connect:
-            if addcart:
+        if not self.connect:
+            if self.addcart:
                 for i in range(molecule.na):
                     self.add(CartesianX(i, w=1.0))
                     self.add(CartesianY(i, w=1.0))
@@ -120,42 +126,6 @@ class PrimitiveInternalCoordinates(SimpleIC):
             self.add(RotationB(i, coords * ang2bohr, self.Rotators, w=rg))
             self.add(RotationC(i, coords * ang2bohr, self.Rotators, w=rg))
 
-        # # Build a list of noncovalent distances
-        # noncov = []
-        # # Connect all non-bonded fragments together
-        # while True:
-        #     # List of disconnected fragments
-        #     subg = list(nx.connected_component_subgraphs(molecule.topology))
-        #     # Break out of loop if all fragments are connected
-        #     if len(subg) == 1: break
-        #     # Find the smallest interatomic distance between any pair of fragments
-        #     minD = 1e10
-        #     for i in range(len(subg)):
-        #         for j in range(i):
-        #             for a in subg[i].nodes():
-        #                 for b in subg[j].nodes():
-        #                     if D[(min(a,b), max(a,b))] < minD:
-        #                         minD = D[(min(a,b), max(a,b))]
-        #     # Next, create one connection between pairs of fragments that have a
-        #     # close-contact distance of at most 1.2 times the minimum found above
-        #     for i in range(len(subg)):
-        #         for j in range(i):
-        #             tminD = 1e10
-        #             conn = False
-        #             conn_a = None
-        #             conn_b = None
-        #             for a in subg[i].nodes():
-        #                 for b in subg[j].nodes():
-        #                     if D[(min(a,b), max(a,b))] < tminD:
-        #                         tminD = D[(min(a,b), max(a,b))]
-        #                         conn_a = min(a,b)
-        #                         conn_b = max(a,b)
-        #                     if D[(min(a,b), max(a,b))] <= 1.3*minD:
-        #                         conn = True
-        #             if conn:
-        #                 molecule.topology.add_edge(conn_a, conn_b)
-        #                 noncov.append((conn_a, conn_b))
-
         # Add an internal coordinate for all interatomic distances
         for (a, b) in molecule.topology.edges():
             self.add(Distance(a, b))
@@ -179,7 +149,7 @@ class PrimitiveInternalCoordinates(SimpleIC):
                         if np.abs(np.cos(Ang.value(coords))) < LinThre:
                             self.add(Angle(a, b, c))
                             AngDict[b].append(Ang)
-                        elif connect or not addcart:
+                        elif self.connect or not self.addcart:
                             # logger.info("Adding linear angle")
                             # Add linear angle IC's
                             # LPW 2019-02-16: Linear angle ICs work well for "very" linear angles in molecules (e.g. HCCCN)
@@ -310,75 +280,3 @@ class PrimitiveInternalCoordinates(SimpleIC):
                             if np.abs(np.cos(Ang2.value(coords))) > LinThre:
                                 continue
                             self.add(Dihedral(a, b, c, d))
-
-        ### Following are codes that evaluate angles and dihedrals involving entire lines-of-atoms
-        ### as single degrees of freedom
-        ### Unfortunately, they do not seem to improve the performance
-        #
-        # def pull_lines(a, front=True, middle=False):
-        #     """
-        #     Given an atom, pull all lines-of-atoms that it is in, e.g.
-        #     e.g.
-        #               D
-        #               C
-        #               B
-        #           EFGHAIJKL
-        #     returns (B, C, D), (H, G, F, E), (I, J, K, L).
-        #
-        #     A is the implicit first item in the list.
-        #     Set front to False to make A the implicit last item in the list.
-        #     Set middle to True to return lines where A is in the middle e.g. (H, G, F, E) and (I, J, K, L).
-        #     """
-        #     answer = []
-        #     for l in atom_lines_uniq:
-        #         if l[0] == a:
-        #             answer.append(l[:][1:])
-        #         elif l[-1] == a:
-        #             answer.append(l[::-1][1:])
-        #         elif middle and a in l:
-        #             answer.append(l[l.index(a):][1:])
-        #             answer.append(l[:l.index(a)][::-1])
-        #     if front: return answer
-        #     else: return [l[::-1] for l in answer]
-        #
-        # def same_line(al, bl):
-        #     for l in atom_lines_uniq:
-        #         if set(al).issubset(set(l)) and set(bl).issubset(set(l)):
-        #             return True
-        #     return False
-        #
-        # ## Multiple angle code; does not improve performance for Fe4N system.
-        # for b in molecule.topology.nodes():
-        #     for al in pull_lines(b, front=False, middle=True):
-        #         for cl in pull_lines(b, front=True, middle=True):
-        #             if al[0] == cl[-1]: continue
-        #             if al[-1] == cl[0]: continue
-        #             self.delete(Angle(al[-1], b, cl[0]))
-        #             self.delete(Angle(cl[0], b, al[-1]))
-        #             if len(set(al).intersection(set(cl))) > 0: continue
-        #             if same_line(al, cl):
-        #                 continue
-        #             if al[-1] < cl[0]:
-        #                 self.add(MultiAngle(al, b, cl))
-        #             else:
-        #                 self.add(MultiAngle(cl[::-1], b, al[::-1]))
-        #
-        ## Multiple dihedral code
-        ## Note: This suffers from a problem where it cannot rebuild the Cartesian coordinates,
-        ## possibly due to a bug in the MultiDihedral class.
-        # for aline in atom_lines_uniq:
-        #     for (b, c) in itertools.combinations(aline, 2):
-        #         if b > c: (b, c) = (c, b)
-        #         for al in pull_lines(b, front=False, middle=True):
-        #             if same_line(al, aline): continue
-        #                 # print "Same line:", al, aline
-        #             for dl in pull_lines(c, front=True, middle=True):
-        #                 if same_line(dl, aline): continue
-        #                     # print "Same line:", dl, aline
-        #                     # continue
-        #                 # if same_line(dl, al): continue
-        #                 if al[-1] == dl[0]: continue
-        #                 # if len(set(al).intersection(set(dl))) > 0: continue
-        #                 # print MultiDihedral(al, b, c, dl)
-        #                 self.delete(Dihedral(al[-1], b, c, dl[0]))
-        #                 self.add(MultiDihedral(al, b, c, dl))
