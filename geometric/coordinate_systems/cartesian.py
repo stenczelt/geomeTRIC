@@ -2,6 +2,7 @@ import numpy as np
 
 from .ic_simple import SimpleIC
 from .slots import CartesianX, CartesianY, CartesianZ
+from geometric.molecule import Molecule
 
 
 class CartesianCoordinates(SimpleIC):
@@ -11,7 +12,7 @@ class CartesianCoordinates(SimpleIC):
     primitive internal coordinates.
     """
 
-    def __init__(self, molecule, **kwargs):
+    def __init__(self, molecule: Molecule, **kwargs):
         super(CartesianCoordinates, self).__init__(molecule)
         self.Internals = []
         self.cPrims = []

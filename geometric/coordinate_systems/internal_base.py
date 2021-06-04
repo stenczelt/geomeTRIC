@@ -9,6 +9,7 @@ import numpy as np
 from numpy.linalg import multi_dot
 
 # local application imports
+from geometric.molecule import Molecule
 from geometric.nifty import logger
 
 CacheWarning = False
@@ -28,7 +29,7 @@ class InternalCoordinateSystemBase(ABC):
 
     """
 
-    def __init__(self, molecule):
+    def __init__(self, molecule: Molecule):
         self.molecule = molecule
         self.stored_wilsonB = OrderedDict()
 

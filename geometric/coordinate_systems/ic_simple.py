@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 import numpy as np
 
-from geometric.molecule import Elements, Radii
+from geometric.molecule import Elements, Radii, Molecule
 from geometric.nifty import ang2bohr, bohr2ang, logger
 from .convert import convert_angstroms_degrees
 from .internal_base import InternalCoordinateSystemBase
@@ -33,7 +33,7 @@ class SimpleIC(InternalCoordinateSystemBase, ABC):
     Simple internal coordinate system: internals are used directly
     """
 
-    def __init__(self, molecule):
+    def __init__(self, molecule: Molecule):
         super(SimpleIC, self).__init__(molecule)
 
         self.Internals = []

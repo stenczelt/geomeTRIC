@@ -4,6 +4,7 @@ import numpy as np
 from numpy.linalg import multi_dot
 
 from geometric.nifty import logger
+from geometric.molecule import Molecule
 from .ic_simple import SimpleIC
 from .internal_base import InternalCoordinateSystemBase
 from .slots import (
@@ -26,7 +27,7 @@ class MixIC(InternalCoordinateSystemBase, ABC):
     # type hints
     Prims: SimpleIC
 
-    def __init__(self, molecule):
+    def __init__(self, molecule: Molecule):
         super(MixIC, self).__init__(molecule)
 
         self.Prims = None

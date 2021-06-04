@@ -4,12 +4,13 @@ from numpy.linalg import multi_dot
 from .primitive import PrimitiveInternalCoordinates
 from .ic_mix import MixIC
 from geometric.nifty import ang2bohr, click, logger
+from geometric.molecule import Molecule
 
 
 class DelocalizedInternalCoordinates(MixIC):
     def __init__(
         self,
-        molecule,
+        molecule: Molecule,
         imagenr=0,
         build=False,
         connect=False,

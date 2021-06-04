@@ -29,7 +29,7 @@ from .slots import (
 class PrimitiveInternalCoordinates(SimpleIC):
     def __init__(
         self,
-        molecule,
+        molecule: Molecule,
         connect=False,
         addcart=False,
         constraints=None,
