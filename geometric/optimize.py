@@ -121,7 +121,7 @@ class Optimizer(object):
         self.recalcHess = False
         if print_info:
             self.print_info()
-        
+
     def print_info(self):
         params = self.params
         logger.info("> ===== Optimization Info: ====\n")
@@ -129,7 +129,7 @@ class Optimizer(object):
             logger.info("> Job type: Transition state optimization\n")
         else:
             logger.info("> Job type: Energy minimization\n")
-            
+
         logger.info("> Maximum number of optimization cycles: %i\n" % params.maxiter)
         logger.info("> Initial / maximum trust radius (Angstrom): %.3f / %.3f\n" % (params.trust, params.tmax))
         logger.info("> Convergence Criteria:\n")
@@ -163,14 +163,14 @@ class Optimizer(object):
             else:
                 logger.info(">  Max-Grad < %.2e\n" % params.Convergence_molpro_gmax)
             logger.info(">  Max-Disp < %.2e -OR- |Delta-E| < %.2e\n" % (params.Convergence_molpro_dmax, params.Convergence_energy))
-            
+
         if self.IC.haveConstraints():
             logger.info("> \n")
             logger.info("> Constraints are requested. The following criterion is added:\n")
             logger.info(">  Max Constraint Violation (in Angstroms/degrees) < %.2e \n" % self.params.Convergence_cmax)
 
         logger.info("> === End Optimization Info ===\n")
-        
+
     def get_cartesian_norm(self, dy, verbose=None):
         if not verbose: verbose = self.params.verbose
         return get_cartesian_norm(self.X, dy, self.IC, self.params.enforce, self.params.verbose, self.params.usedmax)
@@ -266,7 +266,7 @@ class Optimizer(object):
             logger.info("Requesting %i samples from Wigner distribution.\n" % self.params.wigner)
         prefix = self.params.xyzout.replace("_optim.xyz", "").replace(".xyz", "")
         # Call the frequency analysis function with an input Hessian, with most arguments populated from self.params
-        frequency_analysis(self.X, hessian, self.molecule.elem, energy=self.E, temperature=self.params.temperature, pressure=self.params.pressure, verbose=self.params.verbose, 
+        frequency_analysis(self.X, hessian, self.molecule.elem, energy=self.E, temperature=self.params.temperature, pressure=self.params.pressure, verbose=self.params.verbose,
                            outfnm='%s.vdata_%s' % (prefix, suffix), note='Iteration %i Energy % .8f%s' % (self.Iteration, self.E, ' (Optimized Structure)' if afterOpt else ''),
                            wigner=((self.params.wigner, os.path.join(self.dirname, 'wigner')) if do_wigner else None), ignore=self.params.ignore_modes)
 
@@ -388,7 +388,7 @@ class Optimizer(object):
         else:
             logger.info("Hessian Eigenvalues: " + ' '.join("%.5e" % i for i in Eig) + '\n')
         return Eig
-        
+
     def step(self):
         """
         Perform one step of the optimization.
@@ -509,7 +509,7 @@ class Optimizer(object):
         # Shorthand for self.params
         params = self.params
         # Write current optimization trajectory to file
-        if self.params.xyzout is not None: 
+        if self.params.xyzout is not None:
             self.progress.write(self.params.xyzout)
             if self.viz_rotations:
                 self.progress_with_r.write(os.path.splitext(self.params.xyzout)[0]+"_with_r.xyz")
@@ -589,7 +589,7 @@ class Optimizer(object):
             return
 
         assert self.state == OPT_STATE.NEEDS_EVALUATION
-        
+
         ### Adjust Trust Radius and/or Reject Step ###
         prev_trust = self.trust
         # logger.info(" Check force/torque: rmsd = %.5f rmsd_noalign = %.5f ratio = %.5f\n" %
@@ -683,7 +683,7 @@ class Optimizer(object):
 
     def UpdateHessian(self):
         self.H = update_hessian(self.IC, self.H, [self.X, self.Xprev], [self.gradx, self.Gxprev], self.params, trust_limit=False, max_updates=1)
-        
+
     def optimizeGeometry(self):
         """
         High-level optimization loop.
@@ -729,7 +729,7 @@ class Optimizer(object):
                 errorStr += "> %i-%i-%i %6.2f\n" % (key[0]+1, key[1]+1, key[2]+1, val)
             raise LinearTorsionError("A constrained torsion has three consecutive atoms\n"
                                      "forming a nearly linear angle, making the torsion angle poorly defined.\n"+errorStr)
-        
+
 
 class OPT_STATE(object):
     """ This describes the state of an OptObject during the optimization process
@@ -746,7 +746,7 @@ class StepState(object):
     Poor    = 1 # Poor step; decrease the trust radius down to the lower limit.
     Okay    = 2 # Okay step; do not change the trust radius.
     Good    = 3 # Good step; increase the trust radius up to the limit.
-    
+
 def Optimize(coords, molecule, IC, engine, dirname, params, print_info=True):
     """
     Optimize the geometry of a molecule. This function used to contain the whole
@@ -777,6 +777,53 @@ def Optimize(coords, molecule, IC, engine, dirname, params, print_info=True):
     """
     optimizer = Optimizer(coords, molecule, IC, engine, dirname, params, print_info)
     return optimizer.optimizeGeometry()
+
+
+def get_coord_class(coordsys):
+    # First item in tuple: The class to be initialized
+    # Second item in tuple: Whether to connect nonbonded fragments
+    # Third item in tuple: Whether to throw in all Cartesians (no effect if second item is True)
+    CoordSysDict = {'cart': (CartesianCoordinates, False, False),
+                    'prim': (PrimitiveInternalCoordinates, True, False),
+                    'dlc': (DelocalizedInternalCoordinates, True, False),
+                    'hdlc': (DelocalizedInternalCoordinates, False, True),
+                    'tric-p': (PrimitiveInternalCoordinates, False, False),
+                    'tric': (DelocalizedInternalCoordinates, False, False)}
+
+    return CoordSysDict[coordsys.lower()]
+
+def setup_coordinate_system(M, coordsys, engine, bothre, conmethod,dirname, CVals, Cons=None):
+    # get the coordinate system's setup parameters
+    CoordClass, connect, addcart = get_coord_class(coordsys)
+
+    # Get initial coordinates in bohr
+    coords = M.xyzs[0].flatten() * ang2bohr
+
+    # Perform an initial single-point QM calculation to determine bonding & fragments, if using TRIC
+    if hasattr(engine, 'calc_bondorder') and coordsys.lower() in ['hdlc', 'tric'] and bothre > 1e-3:
+        logger.info("Calculating QM bond order and forming bonds using criterion of %.2f\n" % bothre)
+        qm_bo = engine.calc_bondorder(coords, dirname)
+        M.qm_bondorder = [qm_bo]
+        M.build_topology(bond_order=bothre)
+        if len(M.molecules) == 1 and bothre < 0.75:
+            logger.info("Only one fragment found; increasing threshold\n")
+            # Increase the bond order threshold until there are at least 2 fragments of size >1
+            while bothre < 0.75 and len([m for m in M.molecules if len(m.e()) > 1]) == 1:
+                bothre += 0.01
+                M.build_topology(bond_order=bothre)
+            logger.info("Using threshold of %.2f, there are now %i molecules\n" % (bothre, len(M.molecules)))
+        M.top_settings['read_bonds'] = True
+        # Delete the QM bond order to avoid problems when more structures are added
+        del M.Data['qm_bondorder']
+    else:
+        if coordsys.lower() in ['hdlc', 'tric'] and bothre > 1e-3:
+            logger.info("Requested bond order-based connectivity but it is not available in the current engine\n")
+        logger.info("Bonds will be generated from interatomic distances less than %.2f times sum of covalent radii\n" %
+                    M.top_settings['Fac'])
+
+    return CoordClass(M, build=True, connect=connect, addcart=addcart, constraints=Cons,
+                    cvals=CVals[0] if CVals is not None else None,
+                    conmethod=conmethod)
 
 def run_optimizer(**kwargs):
     """
@@ -817,7 +864,7 @@ def run_optimizer(**kwargs):
     now = datetime.now()
     logger.info('-=# \x1b[1;94m geomeTRIC started. Version: %s \x1b[0m #=-\n' % (geometric.__version__))
     logger.info('Current date and time: %s\n' % now.strftime("%Y-%m-%d %H:%M:%S"))
-    
+
     if backed_up:
         logger.info('Backed up existing log file: %s -> %s\n' % (logfilename, os.path.basename(backed_up)))
 
@@ -832,10 +879,10 @@ def run_optimizer(**kwargs):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     kwargs['dirname'] = dirname
-    
+
     # Get the Molecule and engine objects needed for optimization
     M, engine = get_molecule_engine(**kwargs)
-    
+
     # Create Work Queue object
     if kwargs.get('port', 0):
         logger.info("Creating Work Queue object for distributed Hessian calculation\n")
@@ -856,43 +903,9 @@ def run_optimizer(**kwargs):
     #=========================================#
     #| Set up the internal coordinate system |#
     #=========================================#
-    # First item in tuple: The class to be initialized
-    # Second item in tuple: Whether to connect nonbonded fragments
-    # Third item in tuple: Whether to throw in all Cartesians (no effect if second item is True)
-    CoordSysDict = {'cart':(CartesianCoordinates, False, False),
-                    'prim':(PrimitiveInternalCoordinates, True, False),
-                    'dlc':(DelocalizedInternalCoordinates, True, False),
-                    'hdlc':(DelocalizedInternalCoordinates, False, True),
-                    'tric-p':(PrimitiveInternalCoordinates, False, False),
-                    'tric':(DelocalizedInternalCoordinates, False, False)}
     coordsys = kwargs.get('coordsys', 'tric')
-    CoordClass, connect, addcart = CoordSysDict[coordsys.lower()]
+    IC = setup_coordinate_system(M, coordsys, engine, params.bothre, params.conmethod, dirname, CVals, Cons)
 
-    # Perform an initial single-point QM calculation to determine bonding & fragments, if using TRIC
-    if hasattr(engine, 'calc_bondorder') and coordsys.lower() in ['hdlc', 'tric'] and params.bothre > 1e-3:
-        bothre = params.bothre
-        logger.info("Calculating QM bond order and forming bonds using criterion of %.2f\n" % bothre)
-        qm_bo = engine.calc_bondorder(coords, dirname)
-        M.qm_bondorder = [qm_bo]
-        M.build_topology(bond_order=bothre)
-        if len(M.molecules) == 1 and bothre < 0.75:
-            logger.info("Only one fragment found; increasing threshold\n")
-            # Increase the bond order threshold until there are at least 2 fragments of size >1
-            while bothre < 0.75 and len([m for m in M.molecules if len(m.e()) > 1]) == 1:
-                bothre += 0.01
-                M.build_topology(bond_order=bothre)
-            logger.info("Using threshold of %.2f, there are now %i molecules\n" % (bothre, len(M.molecules)))
-        M.top_settings['read_bonds'] = True
-        # Delete the QM bond order to avoid problems when more structures are added
-        del M.Data['qm_bondorder']
-    else:
-        if coordsys.lower() in ['hdlc', 'tric'] and params.bothre > 1e-3:
-            logger.info("Requested bond order-based connectivity but it is not available in the current engine\n")
-        logger.info("Bonds will be generated from interatomic distances less than %.2f times sum of covalent radii\n" % M.top_settings['Fac'])
-
-    IC = CoordClass(M, build=True, connect=connect, addcart=addcart, constraints=Cons, cvals=CVals[0] if CVals is not None else None,
-                    conmethod=params.conmethod)
-    
     #========================================#
     #| End internal coordinate system setup |#
     #========================================#
@@ -947,6 +960,7 @@ def run_optimizer(**kwargs):
         for ic, CVal in enumerate(CVals):
             if len(CVals) > 1:
                 logger.info("---=== Scan %i/%i : Constrained Optimization ===---\n" % (ic+1, len(CVals)))
+            CoordClass, connect, addcart = get_coord_class(coordsys)
             IC = CoordClass(M, build=True, connect=connect, addcart=addcart, constraints=Cons, cvals=CVal, conmethod=params.conmethod)
             IC.printConstraints(coords, thre=-1)
             if len(CVals) > 1:
